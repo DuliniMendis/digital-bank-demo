@@ -9,6 +9,6 @@
 
 require_relative 'lib/bank'
 
-Bank::Web::Api.start(database: Bank::Infrastructure::Database.from_environment)
+Bank::Interfaces::Api.start(database: Bank::Infrastructure::Database.from_environment)
 
-run Bank::Web::Api
+run Bank::Interfaces::Api

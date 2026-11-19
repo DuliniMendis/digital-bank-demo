@@ -89,31 +89,31 @@ four layers, and each one only depends on the ones above it in this table.
 | Layer             | What it does                                                                |
 |-------------------|-----------------------------------------------------------------------------|
 | `domain/`         | The business rules: `Money`, `AccountNumber`, `Account` and `Transfer`.     |
-| `use_cases/`      | The operations the app performs, built from the domain objects.             |
+| `application/`    | The operations the app performs, built from the domain objects.             |
 | `infrastructure/` | Reads the CSV files, and stores the accounts in Postgres.                   |
-| `web/`            | The HTTP API. It calls the use cases and returns JSON.                      |
+| `interfaces/`     | The HTTP API. It calls the application services and returns JSON.           |
 
 The domain layer is plain Ruby with no knowledge of files, the database or
 HTTP, so the rules can be read and tested on their own.
 
-There are two use cases:
+There are two application services:
 
-| Use case           | What it does                                                            |
+| Service            | What it does                                                            |
 |--------------------|-------------------------------------------------------------------------|
 | `SeedAccounts`     | Replaces the stored accounts with one for each line of the balances file. Used to seed and to reseed. |
 | `ProcessTransfers` | Applies a list of transfers in order, completing or rejecting each one. |
 
 A posted transfers file goes through the layers like this:
 
-1. `Web::Api` reads the upload and passes the text to `Infrastructure::CsvFiles`,
+1. `Interfaces::Api` reads the upload and passes the text to `Infrastructure::CsvFiles`,
    which splits it into rows.
-2. `UseCases::ProcessTransfers` builds a `Transfer` from each row, finds the two
+2. `Application::ProcessTransfers` builds a `Transfer` from each row, finds the two
    accounts and asks the transfer to apply itself.
-3. `Web::Api` returns each result, and the balances, as JSON.
+3. `Interfaces::Api` returns each result, and the balances, as JSON.
 
 ### Storage
 
-The use cases never talk to the database directly. They are handed a
+The application services never talk to the database directly. They are handed a
 *repository*, `AccountRepository`, which adds, finds and saves
 accounts in the `accounts` table:
 

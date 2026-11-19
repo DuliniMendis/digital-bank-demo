@@ -3,7 +3,7 @@
 require 'rack/test'
 require 'stringio'
 
-RSpec.describe Bank::Web::Api, :database do
+RSpec.describe Bank::Interfaces::Api, :database do
   include Rack::Test::Methods
 
   # Rack::Test sends its requests to whatever `app` returns.
@@ -25,7 +25,7 @@ RSpec.describe Bank::Web::Api, :database do
   def seed(path)
     accounts = Bank::Infrastructure::AccountRepository.new(database)
     rows = Bank::Infrastructure::CsvFiles.opening_balances(File.read(path))
-    Bank::UseCases::SeedAccounts.new(accounts: accounts).call(rows)
+    Bank::Application::SeedAccounts.new(accounts: accounts).call(rows)
   end
 
   # Uploads the CSV text as a file in a form field called "file", the same

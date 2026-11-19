@@ -3,7 +3,7 @@
 # The money rules themselves are covered by the domain specs. These examples
 # cover what ProcessTransfers adds on top: finding the accounts, turning a
 # refusal into a rejection, and working through the list in order.
-RSpec.describe Bank::UseCases::ProcessTransfers, :database do
+RSpec.describe Bank::Application::ProcessTransfers, :database do
   subject(:process_transfers) { described_class.new(accounts: accounts) }
 
   let(:accounts) { Bank::Infrastructure::AccountRepository.new(database) }
@@ -26,7 +26,7 @@ RSpec.describe Bank::UseCases::ProcessTransfers, :database do
   end
 
   def request(from, to, amount, line: 1)
-    Bank::UseCases::TransferRequest.new(line: line, from: from, to: to, amount: amount)
+    Bank::Application::TransferRequest.new(line: line, from: from, to: to, amount: amount)
   end
 
   def balance_of(number)

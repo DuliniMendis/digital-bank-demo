@@ -4,9 +4,9 @@ require 'json'
 require 'sinatra/base'
 
 module Bank
-  module Web
+  module Interfaces
     # The HTTP API. It contains no business logic: each route reads the
-    # request, calls a use case and returns the result as JSON.
+    # request, calls an application service and returns the result as JSON.
     #
     #   GET  /accounts    the current balance of every account
     #   POST /transfers   applies a transfers CSV, uploaded as form field "file"
@@ -44,7 +44,7 @@ module Bank
         end
 
         def process(requests)
-          UseCases::ProcessTransfers.new(accounts: settings.accounts).call(requests)
+          Application::ProcessTransfers.new(accounts: settings.accounts).call(requests)
         end
 
         # Balances are sent as strings such as "4820.50". A JSON number would

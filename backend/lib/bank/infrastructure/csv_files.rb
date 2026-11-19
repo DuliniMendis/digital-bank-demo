@@ -11,14 +11,14 @@ module Bank
       # Each line of the balances file is: account number, balance.
       def self.opening_balances(text)
         rows(text).map do |line, fields|
-          UseCases::OpeningBalance.new(line: line, number: fields[0], balance: fields[1])
+          Application::OpeningBalance.new(line: line, number: fields[0], balance: fields[1])
         end
       end
 
       # Each line of the transfers file is: from account, to account, amount.
       def self.transfer_requests(text)
         rows(text).map do |line, fields|
-          UseCases::TransferRequest.new(line: line, from: fields[0], to: fields[1], amount: fields[2])
+          Application::TransferRequest.new(line: line, from: fields[0], to: fields[1], amount: fields[2])
         end
       end
 
