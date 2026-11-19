@@ -29,5 +29,24 @@ RSpec.describe Bank::Infrastructure::CsvFiles do
 
       expect(rows.first.amount).to be_nil
     end
+
+    it 'ignores a byte-order mark at the start of the file' do
+      rows = described_class.transfer_requests("\uFEFF1111234522226789,1212343433335665,1\n")
+
+      expect(rows.first.from).to eq('1111234522226789')
+    end
+
+    # `.b` gives the text as raw bytes, which is how an upload arrives.
+    it 'reads the raw bytes of an upload as UTF-8' do
+      rows = described_class.transfer_requests("1111234522226789,1212343433335665,5é\n".b)
+
+      expect(rows.first.amount).to eq('5é')
+    end
+
+    it 'replaces a byte that is not valid UTF-8' do
+      rows = described_class.transfer_requests("1111234522226789,1212343433335665,5\xFF\n".b)
+
+      expect(rows.first.amount).to eq("5\uFFFD")
+    end
   end
 end

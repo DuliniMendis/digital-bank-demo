@@ -74,6 +74,12 @@ RSpec.describe Bank::Web::Api do
       )
     end
 
+    it 'rejects a line that contains an accented character' do
+      post_transfers("1111234522226789,1212343433335665,5é\n")
+
+      expect(body['transfers'].first).to include('status' => 'rejected', 'amount' => '5é')
+    end
+
     it 'keeps the balances between one post and the next' do
       2.times { post_transfers("1111234522226789,1212343433335665,100.00\n") }
 

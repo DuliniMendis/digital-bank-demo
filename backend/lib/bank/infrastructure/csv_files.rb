@@ -8,6 +8,8 @@ module Bank
     # are skipped. The fields are passed on as plain text, because checking
     # that they are valid is the job of the domain.
     module CsvFiles
+      BYTE_ORDER_MARK = "\uFEFF"
+
       # Each line of the balances file is: account number, balance.
       def self.opening_balances(text)
         rows(text).map do |line, fields|
@@ -28,11 +30,24 @@ module Bank
       # false`) and only dropped afterwards. That way the numbers match the
       # original file, and an error message can point at the right line.
       def self.rows(text)
-        lines = CSV.parse(text, skip_blanks: false)
+        lines = CSV.parse(as_utf8(text), skip_blanks: false)
         numbered = lines.each_with_index.map { |fields, index| [index + 1, fields] }
         numbered.reject { |_line, fields| fields.compact.empty? }
       end
       private_class_method :rows
+
+      # An uploaded file arrives as raw bytes, with nothing to say which
+      # encoding they are in. This reads them as UTF-8 and replaces any byte
+      # that is not valid UTF-8 with a placeholder character, so a stray byte
+      # spoils one field and not the whole file.
+      #
+      # Spreadsheet programs often start a file with an invisible byte-order
+      # mark. It is removed here, because otherwise it would become part of
+      # the first account number.
+      def self.as_utf8(text)
+        text.dup.force_encoding(Encoding::UTF_8).scrub.delete_prefix(BYTE_ORDER_MARK)
+      end
+      private_class_method :as_utf8
     end
   end
 end
