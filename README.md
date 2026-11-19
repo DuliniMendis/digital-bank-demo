@@ -4,8 +4,9 @@ A very simple banking service. It loads account balances for one company from a
 CSV file, then applies a day's transfers from a second CSV file. A transfer is
 rejected if it would take the sending account below $0.
 
-This repository is being built one milestone at a time. Each milestone is one
-pull request.
+This branch, `main`, is the answer to the brief and nothing more. A longer
+version that adds a database and an API is being built on the
+[`extended`](../../tree/extended) branch.
 
 ## The sample files
 
@@ -76,24 +77,17 @@ The brief leaves these open. Each one is covered by a spec.
 - Amounts are stored as whole cents, never as decimal numbers, so arithmetic
   is exact.
 
-## Repository layout
+## Architecture
 
-```
-backend/    Ruby: business rules, CSV import, and later the database and HTTP API
-frontend/   React app (added in a later milestone)
-```
-
-## Backend architecture
-
-The backend follows Domain-Driven Design. It is split into four layers, and
-each layer only depends on the layers above it in this table:
+All the code is in `backend/`. It follows Domain-Driven Design and is split
+into three layers. Each layer only depends on the layers above it in this
+table:
 
 | Layer                      | What it holds                                             |
 |----------------------------|-----------------------------------------------------------|
 | `lib/bank/domain/`         | Business rules in plain Ruby. No files, database or HTTP. |
 | `lib/bank/use_cases/`      | What the application does, using the domain.              |
-| `lib/bank/infrastructure/` | CSV reading and account storage.                          |
-| `lib/bank/web/`            | The HTTP API (added in a later milestone).                |
+| `lib/bank/infrastructure/` | CSV reading, and keeping the accounts in memory.          |
 
 Keeping the business rules in `domain/` means they can be read and tested
 without a database or a web server.
@@ -123,7 +117,7 @@ A value object is defined by its contents: two `Money` objects of $5.00 are
 equal. An entity is defined by its identity: two `Account` objects with the
 same number are the same account, whatever their balance.
 
-## Running the backend checks
+## Running the checks
 
 ```bash
 cd backend
