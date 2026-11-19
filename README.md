@@ -6,12 +6,19 @@ would take the sending account below $0 is rejected.
 
 This is the `extended` branch. The `main` branch is the simplest version that
 answers the brief and keeps everything in memory. This branch adds a Postgres
-database, a history of every transfer, and protection against applying the
-same file twice.
+database, a history of every transfer, protection against applying the same
+file twice, and a web page to use it from.
+
+```
+backend/    Ruby: the business rules, the database and the HTTP API
+frontend/   React: the web page
+```
 
 ## Running it
 
-Requires Ruby 4.0 and a running Postgres.
+Requires Ruby 4.0, Node 26 and a running Postgres.
+
+### The API
 
 Create an empty database once, then start the server with it and a balances
 file:
@@ -60,6 +67,24 @@ and a transfers line is `from,to,amount`. Sample files are in
 Balances and history are kept in the database, so they are still there after
 the server restarts.
 
+### The web page
+
+With the API running, start the page from a second terminal:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open `http://localhost:5173`. The page shows the balances, uploads a
+transfers file, lists each transfer as completed or rejected, and shows the
+history. A file that was already applied is not applied again until you
+confirm. "Reset to opening balances" calls the reset route.
+
+The page calls the API at `/api/...` on its own address, and the development
+server passes those requests on to port 9292 (see `frontend/vite.config.ts`).
+
 ## Running the tests
 
 The specs tagged `:database` need a running Postgres with an empty database
@@ -81,7 +106,17 @@ need no database:
 bundle exec rspec --tag '~database'
 ```
 
+The page has its own tests, which need neither the API nor a database:
+
+```bash
+cd frontend
+npm test
+npm run lint
+```
+
 ## Architecture
+
+### Backend
 
 The code is in `backend/lib/bank/` and follows Domain-Driven Design. It has
 four layers, and each one only depends on the ones above it in this table.
@@ -156,3 +191,21 @@ server runs when it starts.
 - **One transfers file is processed at a time.** Each upload takes a lock on
   the `transfers` table, so two uploads cannot both spend the same balance,
   and two copies of the same file cannot both be treated as new.
+
+### Frontend
+
+The page is a small React app in `frontend/src/`, written in TypeScript and
+built with Vite.
+
+| File                            | What it does                                                    |
+|---------------------------------|-----------------------------------------------------------------|
+| `api.ts`                        | Every call to the API. No other file uses `fetch`.              |
+| `App.tsx`                       | The page: what it remembers, and what each button does.         |
+| `components/AccountsTable.tsx`  | The table of balances.                                          |
+| `components/TransfersTable.tsx` | The table of transfers, used for an upload's result and for the history. |
+| `components/UploadForm.tsx`     | The file picker and its button.                                 |
+| `format.ts`                     | Shows `4820.50` as `$4,820.50`, and a timestamp as a local time. |
+
+The page holds no business rules. It never decides whether a transfer is
+allowed or works out a balance: it shows what the API returns. Balances stay
+as text from the database to the screen, so no float ever touches them.
