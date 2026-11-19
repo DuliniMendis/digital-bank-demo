@@ -24,7 +24,7 @@ module Bank
       def withdraw(amount)
         if amount > balance
           raise InsufficientFunds,
-                "account #{number} has #{balance} and cannot pay #{amount}"
+                "account #{number} does not have sufficient funds to withdraw $#{amount}"
         end
 
         @balance -= amount

@@ -44,6 +44,12 @@ RSpec.describe Bank::Domain::Account do
           .to raise_error(Bank::Domain::InsufficientFunds)
       end
 
+      it 'explains which account and how much' do
+        expect { account.withdraw(money(1001)) }.to raise_error(
+          'account 1111234522226789 does not have sufficient funds to withdraw $10.01'
+        )
+      end
+
       it 'leaves the balance unchanged' do
         expect { ignoring_refusal { account.withdraw(money(1001)) } }
           .not_to change(account, :balance)
