@@ -62,4 +62,19 @@ RSpec.describe Bank::Domain::Account do
       end
     end
   end
+
+  describe '#==' do
+    it 'is the same account as another with the same number' do
+      same_number = described_class.new(number: number, balance: money(5))
+
+      expect(account).to eq(same_number)
+    end
+
+    it 'is a different account when the number differs' do
+      other_number = Bank::Domain::AccountNumber.new(value: '1111234522221234')
+      other = described_class.new(number: other_number, balance: money(1000))
+
+      expect(account).not_to eq(other)
+    end
+  end
 end

@@ -26,6 +26,12 @@ module Bank
 
         @balance -= amount
       end
+
+      # Two accounts are the same account if their numbers match, whatever
+      # their balances.
+      def ==(other)
+        other.is_a?(Account) && number == other.number
+      end
     end
   end
 end
