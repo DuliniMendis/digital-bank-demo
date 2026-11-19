@@ -9,7 +9,7 @@ Sequel.migration do
 
       # Which file the line came from, and when that file was uploaded.
       # Every line of one file carries the same two values. The fingerprint
-      # is a SHA-256 hash of the file, which is always 64 characters.
+      # is a hash of the file's text, 64 characters long.
       String :fingerprint, size: 64, null: false, index: true
       column :uploaded_at, :timestamptz, null: false
 

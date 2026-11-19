@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# How a single transfer is applied is tested in process_transfers_spec.
+# How a single transfer is applied is covered by the ProcessTransfers specs.
 # These examples cover what ApplyTransfersFile adds: the history, and
 # refusing a file it has seen before.
 RSpec.describe Bank::UseCases::ApplyTransfersFile, :database do
