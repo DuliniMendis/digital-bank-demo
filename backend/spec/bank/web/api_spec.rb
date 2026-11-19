@@ -130,4 +130,24 @@ RSpec.describe Bank::Web::Api do
       expect(slow_processor.overlapped).to be_falsy
     end
   end
+
+  describe 'reading the balances while a file is being processed' do
+    # Holds the lock, as an upload that is still running would, and asks for
+    # the balances from a second thread. `join(0.05)` returns nil when the
+    # request has not finished within that time, which means it is waiting
+    # for the lock.
+    def reader_waits_for_lock?
+      reader = nil
+      waiting = described_class::ONE_AT_A_TIME.synchronize do
+        reader = Thread.new { get '/accounts' }
+        reader.join(0.05).nil?
+      end
+      reader.join
+      waiting
+    end
+
+    it 'waits until the file is finished' do
+      expect(reader_waits_for_lock?).to be(true)
+    end
+  end
 end
