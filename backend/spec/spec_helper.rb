@@ -1,16 +1,12 @@
 # frozen_string_literal: true
 
-# Tells Sinatra this is a test run. In its default development mode it only
-# accepts requests addressed to localhost, which the test client is not.
+# Sinatra's development mode only answers requests addressed to localhost,
+# which the test client's are not.
 ENV['APP_ENV'] = 'test'
 
 require 'bank'
 
 RSpec.configure do |config|
-  config.expect_with :rspec do |expectations|
-    expectations.include_chain_clauses_in_custom_matcher_descriptions = true
-  end
-
   config.mock_with :rspec do |mocks|
     mocks.verify_partial_doubles = true
   end

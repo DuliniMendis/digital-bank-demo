@@ -4,29 +4,25 @@ require 'csv'
 
 module Bank
   module Infrastructure
-    # CsvFiles is the only code that knows the input arrives as CSV.
-    #
-    # It splits the text into lines and columns and hands each line to the
-    # use cases as plain text. It does not check account numbers or
-    # amounts; the domain does that.
-    #
-    # The files have no header row. Blank lines are skipped.
+    # Reads the two CSV files. Neither has a header row, and blank lines are
+    # skipped. Fields are passed on as plain text; validating them is the
+    # domain's job.
     module CsvFiles
-      # Balances file: account number, balance.
+      # account number, balance
       def self.opening_balances(text)
         rows(text).map do |line, fields|
           UseCases::OpeningBalance.new(line: line, number: fields[0], balance: fields[1])
         end
       end
 
-      # Transfers file: from account, to account, amount.
+      # from, to, amount
       def self.transfer_requests(text)
         rows(text).map do |line, fields|
           UseCases::TransferRequest.new(line: line, from: fields[0], to: fields[1], amount: fields[2])
         end
       end
 
-      # Returns [line number, columns] for every line that is not blank.
+      # Line numbers are kept so an error can point at the right line.
       def self.rows(text)
         lines = CSV.parse(text, skip_blanks: false)
         numbered = lines.each_with_index.map { |fields, index| [index + 1, fields] }

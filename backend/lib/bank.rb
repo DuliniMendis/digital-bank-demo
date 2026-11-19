@@ -1,14 +1,11 @@
 # frozen_string_literal: true
 
-# Bank is the top-level namespace for the banking service.
+# Four layers. Each one only depends on the ones listed above it.
 #
-# The code is split into four layers, and each layer only depends on the
-# layers listed above it:
-#
-#   domain          business rules, in plain Ruby
-#   use_cases       what the application does, using the domain
-#   infrastructure  CSV files, and keeping the accounts in memory
-#   web             the HTTP API
+#   domain          business rules
+#   use_cases       what the app does with them
+#   infrastructure  CSV parsing and in-memory storage
+#   web             HTTP API
 module Bank
 end
 

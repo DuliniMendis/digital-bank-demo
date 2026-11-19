@@ -2,16 +2,8 @@
 
 module Bank
   module Infrastructure
-    # A repository is where accounts are kept and looked up. The use cases
-    # talk to a repository and do not care how it stores things.
-    #
-    # This one keeps accounts in memory, in a Hash keyed by account number.
-    # A day's balances are loaded, the transfers are applied and the result
-    # is read back, all without a database. Storing accounts somewhere
-    # else would mean writing another class with the same three methods.
-    #
-    # The rule "an account number can only exist once" lives here, because
-    # it is a rule about the whole collection and not about one account.
+    # Holds the accounts in a Hash for as long as the process runs. Also the
+    # place where a duplicate account number is caught.
     class InMemoryAccountRepository
       def initialize
         @accounts = {}

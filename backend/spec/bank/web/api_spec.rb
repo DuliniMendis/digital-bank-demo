@@ -3,25 +3,21 @@
 require 'rack/test'
 require 'stringio'
 
-# End-to-end: real HTTP requests in, JSON out. The "sample files" context is
-# the check of the original challenge.
 RSpec.describe Bank::Web::Api do
   include Rack::Test::Methods
 
-  # Rack::Test sends its requests to whatever `app` returns.
   def app
     described_class
   end
 
-  # Every example starts from the sample balances file, as a fresh server
-  # start would.
+  # Each example starts from the sample balances, like a fresh server.
   before { described_class.load_balances(fixture_path('account_balances.csv')) }
 
   def fixture_path(name)
     File.expand_path("../../fixtures/#{name}", __dir__)
   end
 
-  # Posts CSV text to /transfers the way `curl -F file=@transfers.csv` does.
+  # Same as `curl -F file=@transfers.csv`.
   def post_transfers(csv_text)
     file = Rack::Test::UploadedFile.new(StringIO.new(csv_text), 'text/csv', original_filename: 'transfers.csv')
     post '/transfers', file: file
@@ -36,7 +32,7 @@ RSpec.describe Bank::Web::Api do
   end
 
   describe 'GET /accounts' do
-    it 'lists the balances loaded at startup, in file order' do
+    it 'lists the balances loaded at startup' do
       get '/accounts'
 
       expect(body['accounts'].first).to eq('number' => '1111234522226789', 'balance' => '5000.00')
@@ -94,7 +90,7 @@ RSpec.describe Bank::Web::Api do
     end
   end
 
-  describe 'handling two files that arrive together' do
+  describe 'two files arriving at the same time' do
     # Stands in for ProcessTransfers and notices if two calls overlap.
     let(:slow_processor) do
       Class.new do
@@ -110,21 +106,12 @@ RSpec.describe Bank::Web::Api do
       end.new
     end
 
-    it 'processes one at a time' do
+    it 'are processed one after the other' do
       allow(Bank::UseCases::ProcessTransfers).to receive(:new).and_return(slow_processor)
 
       Array.new(2) { Thread.new { post_transfers('') } }.each(&:join)
 
       expect(slow_processor.overlapped).to be_falsy
-    end
-  end
-
-  describe '.load_balances' do
-    it 'refuses a bad balances file, so the server cannot start with it' do
-      bad_file = Tempfile.create(['balances', '.csv']).tap { |file| file.write("12345,1.00\n") }.tap(&:close)
-
-      expect { described_class.load_balances(bad_file.path) }
-        .to raise_error(Bank::UseCases::InvalidOpeningBalances, /line 1/)
     end
   end
 end

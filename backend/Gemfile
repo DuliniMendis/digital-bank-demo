@@ -4,11 +4,7 @@ source 'https://rubygems.org'
 
 ruby file: '.ruby-version'
 
-# Reads CSV files. It stopped being built into Ruby in version 3.4.
-gem 'csv'
-
-# Sinatra is a small web framework. Puma is the server that runs it, and
-# rackup provides the `rackup` command that starts it.
+gem 'csv' # no longer ships with Ruby as of 3.4
 gem 'puma'
 gem 'rackup'
 gem 'sinatra'

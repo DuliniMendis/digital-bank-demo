@@ -2,12 +2,7 @@
 
 module Bank
   module Domain
-    # Transfer is one request to move money: which account it comes from,
-    # which account it goes to, and how much.
-    #
-    # It is a value object. `from` and `to` are AccountNumbers and `amount`
-    # is Money. The constructor checks all of this, so a Transfer that
-    # exists is always complete and valid.
+    # A request to move an amount from one account to another.
     Transfer = Data.define(:from, :to, :amount) do
       def initialize(from:, to:, amount:)
         raise InvalidTransfer, 'from must be an account number' unless from.is_a?(AccountNumber)
@@ -19,10 +14,7 @@ module Bank
         super
       end
 
-      # Moves the money between the two Account objects.
-      #
-      # The withdrawal happens first. If it is refused, an error is raised
-      # before the deposit, so neither balance changes.
+      # Withdraws first. If that is refused, nothing has been deposited yet.
       def apply(source:, destination:)
         source.withdraw(amount)
         destination.deposit(amount)

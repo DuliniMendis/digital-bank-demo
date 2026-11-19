@@ -1,11 +1,6 @@
 # frozen_string_literal: true
 
-# This file starts the server. Run it with:
-#
-#   BALANCES_FILE=spec/fixtures/account_balances.csv bundle exec rackup
-#
-# It loads the account balances from that file into memory, then serves the
-# API on http://localhost:9292.
+# BALANCES_FILE=spec/fixtures/account_balances.csv bundle exec rackup
 
 require_relative 'lib/bank'
 

@@ -2,18 +2,13 @@
 
 module Bank
   module UseCases
-    # One line of the balances file, exactly as it was read: the line number
-    # and the two pieces of text. Nothing has been checked yet.
+    # A line of the balances file, not yet validated.
     OpeningBalance = Data.define(:line, :number, :balance)
 
-    # The balances file could not be loaded. The message says which line.
     class InvalidOpeningBalances < StandardError; end
 
-    # LoadAccounts sets up the starting state: it turns each line of the
-    # balances file into an Account and adds it to the repository.
-    #
-    # The starting balances must be trustworthy, so one bad line stops the
-    # whole load. The error names the line and the reason.
+    # Creates an account for each line of the balances file. Stops at the
+    # first bad line: we should not run on balances we cannot trust.
     class LoadAccounts
       def initialize(accounts:)
         @accounts = accounts
