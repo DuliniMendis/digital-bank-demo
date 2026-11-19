@@ -121,7 +121,10 @@ row locks.
 
 ### Running the extended branch
 
-It requires Node 26 and a running Postgres as well as Ruby. On that branch the
+**The extended branch is hosted at <https://digital-bank-demo-flame.vercel.app>.
+Use that to test it without installing anything.**
+
+To run it yourself instead, it requires Node 26 and a running Postgres as well as Ruby. On that branch the
 Ruby code is in `backend/` and the web page is in `frontend/`.
 
 Switch to the branch, then create a database and seed it with the sample
