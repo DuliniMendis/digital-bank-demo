@@ -23,6 +23,16 @@ simple code matters more here than clever code.
   that only merges `main` into `extended`. Keeping that separate stops a
   feature pull request from showing changes that were already reviewed.
   When the two conflict, keep the database version on `extended`.
+- **The two branches lay their files out differently.** `main` keeps the
+  Ruby app at the repository root. `extended` keeps it in `backend/`, because
+  it has `frontend/` beside it.
+- **A merge of `main` into `extended` must leave the Ruby app in `backend/`.**
+  Git follows an edit to an existing file into `backend/` by itself. For a
+  new file from `main` it stops with a "file location" conflict and suggests
+  the path inside `backend/`, which is the one to accept. Check that nothing
+  from the Ruby app ended up at the root before committing the merge.
+- **`main`'s README and CI workflow assume the root layout.** Do not copy
+  their paths or their missing `cd backend` lines into `extended`.
 
 ## Working with the owner
 
