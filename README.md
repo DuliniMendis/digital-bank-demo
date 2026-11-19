@@ -96,12 +96,11 @@ four layers, and each one only depends on the ones above it in this table.
 The domain layer is plain Ruby with no knowledge of files, the database or
 HTTP, so the rules can be read and tested on their own.
 
-There are three use cases:
+There are two use cases:
 
 | Use case           | What it does                                                            |
 |--------------------|-------------------------------------------------------------------------|
-| `LoadAccounts`     | Creates an account for each line of the balances file.                  |
-| `SeedAccounts`     | Removes the stored accounts, then runs `LoadAccounts`. Used to seed and to reseed. |
+| `SeedAccounts`     | Replaces the stored accounts with one for each line of the balances file. Used to seed and to reseed. |
 | `ProcessTransfers` | Applies a list of transfers in order, completing or rejecting each one. |
 
 A posted transfers file goes through the layers like this:

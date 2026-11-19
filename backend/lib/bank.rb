@@ -17,9 +17,8 @@ require_relative 'bank/domain/account_number'
 require_relative 'bank/domain/account'
 require_relative 'bank/domain/transfer'
 
-require_relative 'bank/use_cases/load_accounts'
-require_relative 'bank/use_cases/process_transfers'
 require_relative 'bank/use_cases/seed_accounts'
+require_relative 'bank/use_cases/process_transfers'
 
 require_relative 'bank/infrastructure/database'
 require_relative 'bank/infrastructure/postgres_account_repository'
