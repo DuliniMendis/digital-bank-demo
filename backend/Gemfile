@@ -7,6 +7,11 @@ ruby file: '.ruby-version'
 # Reads CSV files. It stopped being built into Ruby in version 3.4.
 gem 'csv'
 
+# The Postgres driver, and Sequel, a small library for talking to the
+# database in Ruby instead of raw SQL strings.
+gem 'pg'
+gem 'sequel'
+
 group :development, :test do
   gem 'rspec', '~> 3.13'
   gem 'rubocop', require: false
