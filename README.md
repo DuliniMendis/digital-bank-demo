@@ -1,6 +1,6 @@
 # Digital Bank Demo
 
-A small banking service. It loads account balances for one company from a CSV
+This is small banking service that uses Ruby. It loads account balances for one company from a CSV
 file, then applies a day's transfers from a second CSV file. A transfer that
 would take the sending account below $0 is rejected.
 
@@ -23,8 +23,8 @@ This loads the sample balances into memory and listens on
 BALANCES_FILE=path/to/balances.csv bundle exec rackup
 ```
 
-A bad line in the balances file stops the server from starting, and the error
-names the line.
+A bad line in the balances file stops the server from starting, and an error
+with the line number would indicate what the issue was.
 
 From a second terminal, in `backend/`, post a day's transfers:
 
@@ -41,12 +41,11 @@ To see the balances at any time:
 curl http://localhost:9292/accounts
 ```
 
-A header row is optional in both CSV files. A balances line is
-`account number,balance` and a transfers line is `from,to,amount`. Sample
+A header row is optional in both CSV files. A row in the CSV for balances include
+`account number,balance` and a a row in the CSV for transfers include `from,to,amount`. Sample
 files are in `backend/spec/fixtures/`.
 
-Balances carry over from one post to the next, and reset when the server
-restarts.
+Balances are only reset when the server restarts.
 
 ## Running the tests
 
@@ -81,34 +80,35 @@ A posted transfers file goes through the layers like this:
 
 A few decisions shape the code:
 
-- **Money is whole cents.** Floats cannot represent every cent exactly, so
-  amounts are integers and `"25.60"` is parsed straight to `2560`.
-- **Each rule lives in one place.** Only `Account` knows a balance cannot go
-  below $0. Only `AccountNumber` knows a number is 16 digits.
-- **A broken rule raises a `Domain::Error`.** `ProcessTransfers` rescues that
-  one family and records a rejection, then carries on with the next transfer.
+- **Money is whole cents.** Since dealing with integers is safer and
+  unambiguous for monetary values, the amounts are represented as cents 
+  and `"25.60"` is parsed straight to `2560`.
+- **Each rule lives with the relevant domain object.** Only `Account` knows
+  a balance cannot go below $0. Only `AccountNumber` knows a number is 16 digits.
+- **A broken rule raises a `Domain::Error`.** `ProcessTransfers` records a
+  rejection for an erroneous transfer, then carries on with the next transfer.
 - **A bad balances file stops everything; a bad transfer does not.** The
-  starting balances have to be trustworthy. A bad transfer line is one
-  rejected transfer.
-
+  starting balances have to be trustworthy, so loading the entire balances
+  file is aborted if one of the balances is wrong. A bad transfer line is one
+  rejected transfer, so the other transfer rows are still processed.
+  
 ## Extensions
 
 This branch is the simplest version that answers the brief. The `extended`
 branch builds on it with the things a real service would need:
 
-- **A Postgres database.** Balances survive a restart. Here they are kept in
-  memory and go back to the balances file each time the server starts.
-- **A history of every transfer.** One row is kept for each line of every
-  uploaded file, whether it completed or was rejected.
-- **Locking, so uploads that arrive together are safe.** Each transfer runs
-  in a database transaction that locks the two accounts it touches, and each
-  upload takes a lock for the whole file. Two uploads cannot both spend the
-  same balance, and a reader never sees a transfer that is half applied.
 - **A web page**, built with React, for uploading a file and seeing the
   balances and the history.
+- **A live deployment**, hosted on Vercel.
+- **A Postgres database.** Balances survive a restart and are seeded in a DB.
+  Uses a Neon DB through Vercel.
+- **Locking, so uploads that arrive together are safe.** Each transfer runs
+  in a database transaction that can rollback if either the withdrawal
+  or deposit fails.
+- **React component tests and E2E tests**, built with React Testing Library,
+  Vitest and Playwright.
 
 Locking was left out of this branch on purpose. The server here can handle
 two requests at once, so two uploads arriving at the same moment could both
 spend the same balance. A database solves that properly with transactions and
-row locks. Without one, the only tool is a single lock around everything,
-which makes every request wait for every other.
+row locks.
