@@ -1,6 +1,6 @@
 # Digital Bank Demo
 
-This is small banking service that uses Ruby. It loads account balances for one company from a CSV
+This is a small banking service that uses Ruby. It loads account balances for one company from a CSV
 file, then applies a day's transfers from a second CSV file. A transfer that
 would take the sending account below $0 is rejected.
 
@@ -44,8 +44,8 @@ To see the balances at any time:
 curl http://localhost:9292/accounts
 ```
 
-A header row is optional in both CSV files. A row in the CSV for balances include
-`account number,balance` and a a row in the CSV for transfers include `from,to,amount`. Sample
+A header row is optional in both CSV files. A row in the CSV for balances includes
+`account number,balance` and a row in the CSV for transfers includes `from,to,amount`. Sample
 files are in `spec/fixtures/`.
 
 Balances are only reset when the server restarts.
@@ -91,7 +91,7 @@ A posted transfers file goes through the layers like this:
 A few decisions shape the code:
 
 - **Money is whole cents.** Since dealing with integers is safer and
-  unambiguous for monetary values, the amounts are represented as cents 
+  unambiguous for monetary values, the amounts are represented as cents
   and `"25.60"` is parsed straight to `2560`.
 - **Each rule lives with the relevant domain object.** Only `Account` knows
   a balance cannot go below $0. Only `AccountNumber` knows a number is 16 digits.
@@ -101,14 +101,14 @@ A few decisions shape the code:
   starting balances have to be trustworthy, so loading the entire balances
   file is aborted if one of the balances is wrong. A bad transfer line is one
   rejected transfer, so the other transfer rows are still processed.
-  
+
 ## Extensions
 
 This branch is the simplest version that answers the brief. The `extended`
 branch builds on it with the things a real service would need:
 
 - **A web page**, built with React, for uploading a file and seeing the
-  balances and the history.
+  balances and the result of that upload.
 - **A live deployment**, hosted on Vercel.
 - **A Postgres database.** Balances survive a restart and are seeded in a DB.
   Uses a Neon DB through Vercel.
