@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe Bank::Infrastructure::PostgresTransferHistory do
+RSpec.describe Bank::Infrastructure::TransferHistory do
   subject(:history) { described_class.new(database) }
 
   def result(line, amount, rejection_reason: nil)

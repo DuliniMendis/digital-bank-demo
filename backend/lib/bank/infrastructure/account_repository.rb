@@ -7,7 +7,7 @@ module Bank
     # Each row is turned into an Account on the way out, and an Account is
     # turned back into a row on the way in. Nothing outside this class sees
     # a database row.
-    class PostgresAccountRepository
+    class AccountRepository
       def initialize(database)
         @database = database
         @table = database[:accounts]
