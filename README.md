@@ -10,7 +10,7 @@ are kept in a Postgres database.
 
 ## Running it
 
-Requires Ruby 4.0 and a running Postgres.
+Requires Ruby 3.3 or newer and a running Postgres.
 
 Create an empty database and seed it with the opening balances. Both are done
 once:

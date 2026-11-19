@@ -12,6 +12,11 @@ jobs:
   backend:
     name: Backend (RuboCop and RSpec)
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # The oldest Ruby the Gemfile allows, and the one the code is
+        # developed on, which is read from backend/.ruby-version.
+        ruby: ['3.3', '.ruby-version']
     defaults:
       run:
         working-directory: backend
@@ -37,9 +42,10 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      # Reads the Ruby version from backend/.ruby-version and caches gems.
+      # Installs the Ruby version for this run and caches gems.
       - uses: ruby/setup-ruby@v1
         with:
+          ruby-version: ${{ matrix.ruby }}
           working-directory: backend
           bundler-cache: true
 
