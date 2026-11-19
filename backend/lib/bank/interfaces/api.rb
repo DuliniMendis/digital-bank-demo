@@ -10,33 +10,28 @@ module Bank
     #
     #   GET  /api/accounts    the current balance of every account
     #   POST /api/transfers   applies a transfers CSV, uploaded as form field "file"
-    #   GET  /api/transfers   every transfer from every uploaded file
-    #   POST /api/reset       reseeds: opening balances again, and no history
+    #   POST /api/reset       reseeds: puts the opening balances back
     #
-    # Accounts and history are kept in Postgres, so they are still there
-    # after the server restarts. The server never loads balances when it
-    # starts: the database is filled by seeding it.
+    # The accounts are kept in Postgres, so balances are still there after
+    # the server restarts. The server never loads balances when it starts:
+    # the database is filled by seeding it.
     class Api < Sinatra::Base
       # Tells the app which database to use, and which balances file a reset
       # goes back to. Called once, at startup.
       def self.start(database:, balances_file:)
         set :accounts, Infrastructure::AccountRepository.new(database)
-        set :history, Infrastructure::TransferHistory.new(database)
         set :balances_file, balances_file
       end
 
-      # Empties the database and loads the balances file into it again.
+      # Removes the accounts and loads the balances file into the database
+      # again.
       def self.reseed
         opening_balances = Infrastructure::CsvFiles.opening_balances(File.read(balances_file))
-        Application::SeedAccounts.new(accounts: accounts, history: history).call(opening_balances)
+        Application::SeedAccounts.new(accounts: accounts).call(opening_balances)
       end
 
       get '/api/accounts' do
         json(accounts: accounts_as_json)
-      end
-
-      get '/api/transfers' do
-        json(transfers: settings.history.all.map { |recorded| recorded_transfer_as_json(recorded) })
       end
 
       post '/api/transfers' do
@@ -75,7 +70,7 @@ module Bank
         end
 
         def process(requests)
-          Application::ProcessTransfers.new(accounts: settings.accounts, history: settings.history).call(requests)
+          Application::ProcessTransfers.new(accounts: settings.accounts).call(requests)
         end
 
         # Balances are sent as strings such as "4820.50". A JSON number would
@@ -92,12 +87,6 @@ module Bank
             status: result.completed? ? 'completed' : 'rejected',
             reason: result.rejection_reason
           )
-        end
-
-        # The upload time is sent in ISO 8601 form, for example
-        # "2026-11-19T14:02:11+11:00".
-        def recorded_transfer_as_json(recorded)
-          transfer_as_json(recorded.result).merge(uploaded_at: recorded.uploaded_at.iso8601)
         end
       end
     end

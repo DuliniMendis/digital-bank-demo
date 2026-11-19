@@ -11,23 +11,21 @@ module Bank
     class InvalidOpeningBalances < StandardError; end
 
     # Fills the database with the opening balances: one account for each line
-    # of the balances file. Any accounts already stored are removed first, and
-    # so is the transfer history, so seeding an empty database and seeding
-    # one again later (reseeding) are the same operation.
+    # of the balances file. Any accounts already stored are removed first, so
+    # seeding an empty database and seeding one again later (reseeding) are
+    # the same operation.
     #
     # It stops at the first bad line, because the transfers should not be run
     # against starting balances that cannot be trusted. Everything happens in
-    # one transaction, so a bad line leaves the accounts and history already
-    # stored as they were.
+    # one transaction, so a bad line leaves the accounts already stored as
+    # they were.
     class SeedAccounts
-      def initialize(accounts:, history:)
+      def initialize(accounts:)
         @accounts = accounts
-        @history = history
       end
 
       def call(opening_balances)
         @accounts.transaction do
-          @history.clear
           @accounts.clear
           opening_balances.each { |row| add(row) }
         end

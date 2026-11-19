@@ -2,13 +2,11 @@
 
 # The money rules themselves are covered by the domain specs. These examples
 # cover what ProcessTransfers adds on top: finding the accounts, turning a
-# refusal into a rejection, working through the list in order, and recording
-# the history.
+# refusal into a rejection, and working through the list in order.
 RSpec.describe Bank::Application::ProcessTransfers, :database do
-  subject(:process_transfers) { described_class.new(accounts: accounts, history: history) }
+  subject(:process_transfers) { described_class.new(accounts: accounts) }
 
   let(:accounts) { Bank::Infrastructure::AccountRepository.new(database) }
-  let(:history) { Bank::Infrastructure::TransferHistory.new(database) }
   let(:alice) { '1111234522226789' }
   let(:bob) { '1212343433335665' }
   let(:stranger) { '9999999999999999' }
@@ -77,7 +75,7 @@ RSpec.describe Bank::Application::ProcessTransfers, :database do
     end
   end
 
-  # This is why the money is moved inside a transaction.
+  # This is why each transfer runs in a transaction.
   context 'when saving fails halfway through a transfer' do
     before do
       receiver = having_attributes(number: Bank::Domain::AccountNumber.new(value: bob))
@@ -92,7 +90,7 @@ RSpec.describe Bank::Application::ProcessTransfers, :database do
   end
 
   context 'with several transfers' do
-    def requests
+    let(:requests) do
       [
         request(alice, bob, '99.00', line: 1), # rejected: more than Alice has
         request(alice, bob, '4.00', line: 2),
@@ -110,21 +108,6 @@ RSpec.describe Bank::Application::ProcessTransfers, :database do
       process_transfers.call(requests)
 
       expect(balance_of(bob)).to eq('0.00')
-    end
-  end
-
-  it 'records each result in the history' do
-    results = process_transfers.call([request(alice, bob, '3.00'), request(alice, stranger, '1.00', line: 2)])
-
-    expect(history.all.map(&:result)).to eq(results)
-  end
-
-  context 'when recording the history fails' do
-    before { allow(history).to receive(:record).and_raise('the database went away') }
-
-    it 'undoes the transfers, so the file can be sent again' do
-      expect { process_transfers.call([request(alice, bob, '3.00')]) }
-        .to raise_error('the database went away').and(not_change { balance_of(alice) })
     end
   end
 end
