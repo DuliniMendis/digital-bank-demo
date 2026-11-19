@@ -6,11 +6,18 @@ would take the sending account below $0 is rejected.
 
 This is the `extended` branch. The `main` branch is the simplest version that
 answers the brief and keeps everything in memory. On this branch the accounts
-are kept in a Postgres database.
+are kept in a Postgres database, and there is a web page to use it from.
+
+```
+backend/    Ruby: the business rules, the database and the HTTP API
+frontend/   React: the web page
+```
 
 ## Running it
 
-Requires Ruby 3.3 or newer and a running Postgres.
+Requires Ruby 3.3 or newer, Node 26 and a running Postgres.
+
+### The API
 
 Create an empty database and seed it with the opening balances. Both are done
 once:
@@ -65,6 +72,26 @@ route or run the seed command again. Both replace whatever accounts the
 database holds. The reset route reads the same balances file as the seed
 command, so start the server with the same `BALANCES_FILE` if you named one.
 
+### The web page
+
+With the API running, start the page from a second terminal:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open `http://localhost:5173`. The page shows the balances, uploads a
+transfers file, and lists each transfer in it as completed or rejected. That
+result stays on the page until the next upload, a reset or a reload; nothing
+keeps a history of past uploads. "Reset to opening balances" calls the reset
+route, which reseeds the database. On a database that was never seeded, that
+button is how the page loads the balances.
+
+The page calls the API at `/api/...` on its own address, and the development
+server passes those requests on to port 9292 (see `frontend/vite.config.ts`).
+
 ## Running the tests
 
 Most specs are tagged `:database` and need a running Postgres with an empty
@@ -86,7 +113,17 @@ for reading CSV files need no database. To run only those:
 bundle exec rspec --tag '~database'
 ```
 
+The page has its own tests, which need neither the API nor a database:
+
+```bash
+cd frontend
+npm test
+npm run lint
+```
+
 ## Architecture
+
+### Backend
 
 The code is in `backend/lib/bank/` and follows Domain-Driven Design. It has
 four layers, and each one only depends on the ones above it in this table.
@@ -147,3 +184,28 @@ and the seed command both run when they start.
   same way for the whole balances file.
 - **Two transfers cannot both spend the same balance.** Looking up an account
   for a transfer locks its row in the database until that transfer is saved.
+
+### Frontend
+
+The page is a small React app in `frontend/src/`, written in TypeScript and
+built with Vite.
+
+| File            | What it does                                                                       |
+|-----------------|------------------------------------------------------------------------------------|
+| `App.tsx`       | The page: what it remembers, what each button does, and the order of its sections. |
+| `lib/api.ts`    | Every call to the API. No other file uses `fetch`.                                 |
+| `lib/format.ts` | Shows `4820.50` as `$4,820.50`.                                                    |
+
+`App.tsx` hands what it remembers to the components in `components/`, one for
+each part of the page:
+
+| Component         | What it shows                                                        |
+|-------------------|----------------------------------------------------------------------|
+| `PageHeader`      | The title and the reset button.                                      |
+| `AccountsSection` | The balances, in an `AccountsTable`.                                 |
+| `UploadSection`   | The `UploadForm` (file picker and button) and the `UploadResult` of the last upload. |
+| `TransfersTable`  | The table of transfers inside the upload result.                     |
+
+The page holds no business rules. It never decides whether a transfer is
+allowed or works out a balance: it shows what the API returns. Balances stay
+as text from the database to the screen, so no float ever touches them.
