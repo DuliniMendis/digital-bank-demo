@@ -24,13 +24,8 @@ balances, applies the transfers and checks the result:
 All four transfers complete, and the total across all accounts stays at
 $66,750.00.
 
-To run it (requires Ruby 4.0, see `backend/.ruby-version`):
-
-```bash
-cd backend
-bundle install
-bundle exec rspec spec/integration
-```
+The spec runs twice: once with accounts kept in memory, and once with accounts
+kept in Postgres. To run it, see [Running the backend checks](#running-the-backend-checks).
 
 A transfer that cannot be applied is rejected with a reason, for example
 `account 1111234522226789 does not have sufficient funds to withdraw $9999.00`,
@@ -68,6 +63,14 @@ The brief leaves these open. Each one is covered by a spec.
 - An account number may appear only once in the balances file.
 - An opening balance of $0 is allowed. A negative one is not.
 
+**Storage**
+
+- Loading the balances file is all or nothing. If one line is bad, no account
+  from that file is stored.
+- Each transfer is saved in its own database transaction: both balances
+  change together, or neither does.
+- Accounts are listed in the order they were loaded.
+
 **Amounts and account numbers**
 
 - An account number is exactly 16 digits.
@@ -79,7 +82,7 @@ The brief leaves these open. Each one is covered by a spec.
 ## Repository layout
 
 ```
-backend/    Ruby: business rules, CSV import, and later the database and HTTP API
+backend/    Ruby: business rules, CSV import, Postgres storage, and later the HTTP API
 frontend/   React app (added in a later milestone)
 ```
 
@@ -92,7 +95,7 @@ each layer only depends on the layers above it in this table:
 |----------------------------|-----------------------------------------------------------|
 | `lib/bank/domain/`         | Business rules in plain Ruby. No files, database or HTTP. |
 | `lib/bank/use_cases/`      | What the application does, using the domain.              |
-| `lib/bank/infrastructure/` | CSV reading and account storage.                          |
+| `lib/bank/infrastructure/` | CSV reading, and account storage (in memory or Postgres). |
 | `lib/bank/web/`            | The HTTP API (added in a later milestone).                |
 
 Keeping the business rules in `domain/` means they can be read and tested
@@ -123,13 +126,51 @@ A value object is defined by its contents: two `Money` objects of $5.00 are
 equal. An entity is defined by its identity: two `Account` objects with the
 same number are the same account, whatever their balance.
 
+## Storage
+
+The use cases never talk to a database directly. They are handed a
+*repository*, an object that knows how to add, find and save accounts. There
+are two, with the same methods:
+
+| Repository                  | Stores accounts in     | Used by                              |
+|-----------------------------|------------------------|--------------------------------------|
+| `InMemoryAccountRepository` | A Ruby Hash            | Fast specs that need no database.    |
+| `PostgresAccountRepository` | The `accounts` table   | The real application.                |
+
+One shared set of specs (`spec/support/account_repository_examples.rb`) runs
+against both, which is what proves they are interchangeable.
+
+The `accounts` table is created by `backend/db/migrations/001_create_accounts.rb`:
+
+| Column          | Meaning                                                        |
+|-----------------|----------------------------------------------------------------|
+| `id`            | Records the order accounts were added.                         |
+| `number`        | The 16 digit account number. Must be unique.                   |
+| `balance_cents` | The balance in whole cents. The database refuses a negative.   |
+
 ## Running the backend checks
+
+Requires Ruby 4.0 (see `backend/.ruby-version`) and a running Postgres.
 
 ```bash
 cd backend
-bundle exec rspec     # tests
-bundle exec rubocop   # style checks
+bundle install          # once, like `npm install`
+createdb bank_test      # once: an empty database for the specs
+
+bundle exec rspec       # tests
+bundle exec rubocop     # style checks
 ```
 
-The same two commands run in GitHub Actions on every pull request
-(`.github/workflows/ci.yml`).
+The specs create the tables themselves, and each one undoes its own changes,
+so the database is left empty. To use a database somewhere else, set
+`DATABASE_URL`, for example `postgres://user:password@localhost/bank_test`.
+
+Only the specs tagged `:database` need Postgres. To run everything else
+without it:
+
+```bash
+bundle exec rspec --tag '~database'
+```
+
+GitHub Actions runs the style checks and all specs, with its own Postgres, on
+every pull request (`.github/workflows/ci.yml`).
