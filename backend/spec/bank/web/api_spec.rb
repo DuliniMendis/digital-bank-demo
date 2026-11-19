@@ -92,6 +92,12 @@ RSpec.describe Bank::Web::Api do
       expect(last_response.status).to eq(400)
     end
 
+    it 'answers 400 when "file" is sent as text and not as a file' do
+      post '/transfers', file: "1111234522226789,1212343433335665,1.00\n"
+
+      expect(last_response.status).to eq(400)
+    end
+
     it 'answers 400 when the file is not valid CSV' do
       post_transfers(%("unclosed,quote\n))
 
