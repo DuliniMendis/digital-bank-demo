@@ -64,20 +64,20 @@ four layers, and each one only depends on the ones above it in this table.
 | Layer             | What it does                                                                |
 |-------------------|-----------------------------------------------------------------------------|
 | `domain/`         | The business rules: `Money`, `AccountNumber`, `Account` and `Transfer`.     |
-| `use_cases/`      | `LoadAccounts` and `ProcessTransfers`, which put the domain objects to work.|
+| `application/`    | `LoadAccounts` and `ProcessTransfers`, which put the domain objects to work.|
 | `infrastructure/` | Reads the CSV files, and keeps the accounts in memory.                      |
-| `web/`            | The HTTP API. It calls the use cases and returns JSON.                      |
+| `interfaces/`     | The HTTP API. It calls the application services and returns JSON.           |
 
 The domain layer is plain Ruby with no knowledge of files or HTTP, so the
 rules can be read and tested on their own.
 
 A posted transfers file goes through the layers like this:
 
-1. `Web::Api` reads the upload and passes the text to `Infrastructure::CsvFiles`,
+1. `Interfaces::Api` reads the upload and passes the text to `Infrastructure::CsvFiles`,
    which splits it into rows.
-2. `UseCases::ProcessTransfers` builds a `Transfer` from each row, finds the two
+2. `Application::ProcessTransfers` builds a `Transfer` from each row, finds the two
    accounts and asks the transfer to apply itself.
-3. `Web::Api` returns each result, and the balances, as JSON.
+3. `Interfaces::Api` returns each result, and the balances, as JSON.
 
 A few decisions shape the code:
 

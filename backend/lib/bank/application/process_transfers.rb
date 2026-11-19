@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Bank
-  module UseCases
+  module Application
     # One line of the transfers file: its line number and the three fields
     # as plain text. Nothing has been validated at this point.
     TransferRequest = Data.define(:line, :from, :to, :amount)

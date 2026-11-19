@@ -3,7 +3,7 @@
 require 'rack/test'
 require 'stringio'
 
-RSpec.describe Bank::Web::Api do
+RSpec.describe Bank::Interfaces::Api do
   include Rack::Test::Methods
 
   # Rack::Test sends its requests to whatever `app` returns.
@@ -111,7 +111,7 @@ RSpec.describe Bank::Web::Api do
     end
 
     it 'are processed one after the other' do
-      allow(Bank::UseCases::ProcessTransfers).to receive(:new).and_return(slow_processor)
+      allow(Bank::Application::ProcessTransfers).to receive(:new).and_return(slow_processor)
 
       Array.new(2) { Thread.new { post_transfers('') } }.each(&:join)
 
