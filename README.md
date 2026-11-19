@@ -11,7 +11,6 @@ Requires Ruby 3.3 or newer.
 Start the server:
 
 ```bash
-cd backend
 bundle install
 bundle exec rackup
 ```
@@ -26,7 +25,7 @@ BALANCES_FILE=path/to/balances.csv bundle exec rackup
 A bad line in the balances file stops the server from starting, and an error
 with the line number would indicate what the issue was.
 
-From a second terminal, in `backend/`, post a day's transfers:
+From a second terminal, post a day's transfers:
 
 ```bash
 curl -F file=@spec/fixtures/transfers.csv http://localhost:9292/transfers
@@ -43,21 +42,20 @@ curl http://localhost:9292/accounts
 
 A header row is optional in both CSV files. A row in the CSV for balances include
 `account number,balance` and a a row in the CSV for transfers include `from,to,amount`. Sample
-files are in `backend/spec/fixtures/`.
+files are in `spec/fixtures/`.
 
 Balances are only reset when the server restarts.
 
 ## Running the tests
 
 ```bash
-cd backend
 bundle exec rspec
 bundle exec rubocop
 ```
 
 ## Architecture
 
-The code is in `backend/lib/bank/` and follows Domain-Driven Design. It has
+The code is in `lib/bank/` and follows Domain-Driven Design. It has
 four layers, and each one only depends on the ones above it in this table.
 
 | Layer             | What it does                                                                |
