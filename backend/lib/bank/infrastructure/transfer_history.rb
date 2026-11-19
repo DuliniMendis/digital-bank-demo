@@ -56,11 +56,11 @@ module Bank
       end
 
       def to_recorded_transfer(row)
-        request = UseCases::TransferRequest.new(
+        request = Application::TransferRequest.new(
           line: row[:line], from: row[:from_account], to: row[:to_account], amount: row[:amount]
         )
-        result = UseCases::TransferResult.new(request: request, rejection_reason: row[:rejection_reason])
-        UseCases::RecordedTransfer.new(result: result, uploaded_at: row[:uploaded_at])
+        result = Application::TransferResult.new(request: request, rejection_reason: row[:rejection_reason])
+        Application::RecordedTransfer.new(result: result, uploaded_at: row[:uploaded_at])
       end
     end
   end

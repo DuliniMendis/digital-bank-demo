@@ -4,7 +4,7 @@
 # cover what ProcessTransfers adds on top: finding the accounts, turning a
 # refusal into a rejection, working through the list in order, recording the
 # history, and refusing a file it has seen before.
-RSpec.describe Bank::UseCases::ProcessTransfers, :database do
+RSpec.describe Bank::Application::ProcessTransfers, :database do
   subject(:process_transfers) { described_class.new(accounts: accounts, history: history) }
 
   let(:accounts) { Bank::Infrastructure::AccountRepository.new(database) }
@@ -28,7 +28,7 @@ RSpec.describe Bank::UseCases::ProcessTransfers, :database do
   end
 
   def request(from, to, amount, line: 1)
-    Bank::UseCases::TransferRequest.new(line: line, from: from, to: to, amount: amount)
+    Bank::Application::TransferRequest.new(line: line, from: from, to: to, amount: amount)
   end
 
   def balance_of(number)
@@ -130,7 +130,7 @@ RSpec.describe Bank::UseCases::ProcessTransfers, :database do
 
     it 'refuses it and moves no money' do
       expect { process([request(alice, bob, '3.00')]) }
-        .to raise_error(Bank::UseCases::TransfersAlreadyApplied).and(not_change { balance_of(alice) })
+        .to raise_error(Bank::Application::TransfersAlreadyApplied).and(not_change { balance_of(alice) })
     end
 
     it 'applies it when apply_again is true' do

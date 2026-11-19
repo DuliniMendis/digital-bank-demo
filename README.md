@@ -139,33 +139,33 @@ four layers, and each one only depends on the ones above it in this table.
 | Layer             | What it does                                                                  |
 |-------------------|-------------------------------------------------------------------------------|
 | `domain/`         | The business rules: `Money`, `AccountNumber`, `Account` and `Transfer`.       |
-| `use_cases/`      | The operations the app performs, built from the domain objects.               |
+| `application/`    | The operations the app performs, built from the domain objects.               |
 | `infrastructure/` | Reads the CSV files, and stores the accounts and the history in Postgres.     |
-| `web/`            | The HTTP API. It calls the use cases and returns JSON.                        |
+| `interfaces/`     | The HTTP API. It calls the application services and returns JSON.             |
 
 The domain layer is plain Ruby with no knowledge of files, the database or
 HTTP, so the rules can be read and tested on their own.
 
-There are two use cases:
+There are two application services:
 
-| Use case           | What it does                                                             |
+| Service            | What it does                                                             |
 |--------------------|--------------------------------------------------------------------------|
 | `SeedAccounts`     | Empties the accounts and the history, then stores one account for each line of the balances file. Seeds and reseeds. |
 | `ProcessTransfers` | Refuses a file seen before, applies its transfers in order, completing or rejecting each one, and records them in the history. |
 
 A posted transfers file goes through the layers like this:
 
-1. `Web::Api` reads the upload and passes the text to `Infrastructure::CsvFiles`,
+1. `Interfaces::Api` reads the upload and passes the text to `Infrastructure::CsvFiles`,
    which splits it into rows and works out the file's fingerprint.
-2. `UseCases::ProcessTransfers` checks the history for that fingerprint. Then it
+2. `Application::ProcessTransfers` checks the history for that fingerprint. Then it
    builds a `Transfer` from each row, finds the two accounts and asks the
    transfer to apply itself.
 3. `ProcessTransfers` records every result in the history.
-4. `Web::Api` returns each result, and the balances, as JSON.
+4. `Interfaces::Api` returns each result, and the balances, as JSON.
 
 ### Storage
 
-The use cases never talk to the database directly. They are handed two
+The application services never talk to the database directly. They are handed two
 objects from `infrastructure/`:
 
 | Object              | Table       | What it keeps                                       |

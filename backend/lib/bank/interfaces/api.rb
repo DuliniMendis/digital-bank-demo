@@ -4,9 +4,9 @@ require 'json'
 require 'sinatra/base'
 
 module Bank
-  module Web
+  module Interfaces
     # The HTTP API. It contains no business logic: each route reads the
-    # request, calls a use case and returns the result as JSON.
+    # request, calls an application service and returns the result as JSON.
     #
     #   GET  /api/accounts    the current balance of every account
     #   POST /api/transfers   applies a transfers CSV, uploaded as form field "file"
@@ -28,7 +28,7 @@ module Bank
       # Empties the database and loads the balances file into it again.
       def self.reseed
         opening_balances = Infrastructure::CsvFiles.opening_balances(File.read(balances_file))
-        UseCases::SeedAccounts.new(accounts: accounts, history: history).call(opening_balances)
+        Application::SeedAccounts.new(accounts: accounts, history: history).call(opening_balances)
       end
 
       get '/api/accounts' do
@@ -49,7 +49,7 @@ module Bank
         json(transfers: results.map { |result| transfer_as_json(result) }, accounts: accounts_as_json)
       rescue CSV::MalformedCSVError => e
         halt 400, json(error: "The file is not valid CSV: #{e.message}")
-      rescue UseCases::TransfersAlreadyApplied => e
+      rescue Application::TransfersAlreadyApplied => e
         # 409 Conflict: the request is fine, but it clashes with what the
         # server already holds.
         halt 409, json(error: "#{e.message} Send it with apply_again=true to apply it a second time.")
@@ -72,7 +72,7 @@ module Bank
         end
 
         def apply(csv, apply_again:)
-          UseCases::ProcessTransfers.new(accounts: settings.accounts, history: settings.history).call(
+          Application::ProcessTransfers.new(accounts: settings.accounts, history: settings.history).call(
             Infrastructure::CsvFiles.transfer_requests(csv),
             fingerprint: Infrastructure::CsvFiles.fingerprint(csv),
             apply_again: apply_again

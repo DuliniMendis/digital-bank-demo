@@ -22,8 +22,8 @@ opening_balances = Bank::Infrastructure::CsvFiles.opening_balances(File.read(bal
 # A bad line in the file stops the seeding, and whatever the database held
 # before is left untouched.
 begin
-  Bank::UseCases::SeedAccounts.new(accounts: accounts, history: history).call(opening_balances)
-rescue Bank::UseCases::InvalidOpeningBalances => e
+  Bank::Application::SeedAccounts.new(accounts: accounts, history: history).call(opening_balances)
+rescue Bank::Application::InvalidOpeningBalances => e
   abort "Nothing was changed. #{balances_file}, #{e.message}"
 end
 
