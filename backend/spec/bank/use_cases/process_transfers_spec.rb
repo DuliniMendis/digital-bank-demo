@@ -82,6 +82,23 @@ RSpec.describe Bank::UseCases::ProcessTransfers do
     end
   end
 
+  # This is why each transfer runs in a transaction. It needs a real
+  # database, because only a database can undo a save.
+  context 'when saving fails halfway through a transfer', :database do
+    let(:accounts) { Bank::Infrastructure::PostgresAccountRepository.new(database) }
+
+    before do
+      receiver = having_attributes(number: Bank::Domain::AccountNumber.new(value: bob))
+      allow(accounts).to receive(:save).and_call_original
+      allow(accounts).to receive(:save).with(receiver).and_raise('the database went away')
+    end
+
+    it 'undoes the withdrawal that was already saved' do
+      expect { process_transfers.call([request(alice, bob, '3.00')]) }
+        .to raise_error('the database went away').and(not_change { balance_of(alice) })
+    end
+  end
+
   context 'with several transfers' do
     let(:requests) do
       [
