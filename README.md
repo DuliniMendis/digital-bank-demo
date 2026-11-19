@@ -86,8 +86,7 @@ npm run dev
 
 Open `http://localhost:5173`. The page shows the balances, uploads a
 transfers file, lists each transfer as completed or rejected, and shows the
-history. A file that was already applied is not applied again until you
-confirm. "Reset to opening balances" calls the reset route, which reseeds the
+history. "Reset to opening balances" calls the reset route, which reseeds the
 database. On a database that was never seeded, that button is how the page
 loads the balances.
 
@@ -195,11 +194,19 @@ built with Vite.
 | File                            | What it does                                                    |
 |---------------------------------|-----------------------------------------------------------------|
 | `api.ts`                        | Every call to the API. No other file uses `fetch`.              |
-| `App.tsx`                       | The page: what it remembers, and what each button does.         |
-| `components/AccountsTable.tsx`  | The table of balances.                                          |
-| `components/TransfersTable.tsx` | The table of transfers, used for an upload's result and for the history. |
-| `components/UploadForm.tsx`     | The file picker and its button.                                 |
+| `App.tsx`                       | The page: what it remembers, what each button does, and the order of its sections. |
 | `format.ts`                     | Shows `4820.50` as `$4,820.50`, and a timestamp as a local time. |
+
+`App.tsx` hands what it remembers to the components in `components/`, one for
+each part of the page:
+
+| Component         | What it shows                                                        |
+|-------------------|----------------------------------------------------------------------|
+| `PageHeader`      | The title and the reset button.                                      |
+| `AccountsSection` | The balances, in an `AccountsTable`.                                 |
+| `UploadSection`   | The `UploadForm` (file picker and button) and the `UploadResult` of the last upload. |
+| `HistorySection`  | Every transfer from every uploaded file.                             |
+| `TransfersTable`  | A table of transfers, used by the upload result and by the history.  |
 
 The page holds no business rules. It never decides whether a transfer is
 allowed or works out a balance: it shows what the API returns. Balances stay

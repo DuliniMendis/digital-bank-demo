@@ -40,12 +40,11 @@ const afterTransfer: Account[] = [
 type Answer = { status: number; body: unknown }
 
 // What the stand-in answers to each kind of request. A test changes an entry
-// to set up its scenario. POST /api/transfers takes its answers from a list,
-// one per upload, so a test can make the first upload fail and the next work.
+// to set up its scenario.
 let server: {
   accounts: Answer
   history: Answer
-  uploads: Answer[]
+  upload: Answer
   reset: Answer
 }
 
@@ -58,7 +57,7 @@ function fakeFetch(path: string | URL | Request, options?: RequestInit): Promise
 
   if (method === 'POST' && path === '/api/transfers') {
     uploadsSent.push(options?.body as FormData)
-    answer = server.uploads.shift()!
+    answer = server.upload
   } else if (method === 'POST' && path === '/api/reset') {
     answer = server.reset
   } else if (path === '/api/transfers') {
@@ -74,7 +73,7 @@ beforeEach(() => {
   server = {
     accounts: { status: 200, body: { accounts: openingAccounts } },
     history: { status: 200, body: { transfers: [] } },
-    uploads: [],
+    upload: { status: 200, body: { transfers: [], accounts: openingAccounts } },
     reset: { status: 200, body: { accounts: openingAccounts } },
   }
   uploadsSent = []
@@ -106,7 +105,7 @@ test('shows the balances when the page opens', async () => {
 })
 
 test('uploading a file shows each transfer and the new balances', async () => {
-  server.uploads = [{ status: 200, body: { transfers: [completed], accounts: afterTransfer } }]
+  server.upload = { status: 200, body: { transfers: [completed], accounts: afterTransfer } }
   render(<App />)
   await screen.findByText('$5,000.00')
 
@@ -121,7 +120,7 @@ test('uploading a file shows each transfer and the new balances', async () => {
 })
 
 test('a rejected transfer is shown with the reason', async () => {
-  server.uploads = [{ status: 200, body: { transfers: [completed, rejected], accounts: afterTransfer } }]
+  server.upload = { status: 200, body: { transfers: [completed, rejected], accounts: afterTransfer } }
   render(<App />)
   await screen.findByText('$5,000.00')
 
@@ -132,28 +131,8 @@ test('a rejected transfer is shown with the reason', async () => {
   expect(screen.getByText(/does not have sufficient funds to withdraw \$9999.00/)).toBeInTheDocument()
 })
 
-test('a file that was already applied is only applied again after confirming', async () => {
-  server.uploads = [
-    { status: 409, body: { error: 'This transfers file has already been applied.' } },
-    { status: 200, body: { transfers: [completed], accounts: afterTransfer } },
-  ]
-  render(<App />)
-  await screen.findByText('$5,000.00')
-
-  const user = await uploadFile()
-
-  // The server refused, so the page asks and the balances have not moved.
-  expect(await screen.findByText('transfers.csv has already been applied.')).toBeInTheDocument()
-  expect(section('Accounts').getByText('$5,000.00')).toBeInTheDocument()
-
-  await user.click(screen.getByRole('button', { name: 'Apply again' }))
-
-  expect(await section('Accounts').findByText('$4,500.00')).toBeInTheDocument()
-  expect(uploadsSent[1].get('apply_again')).toBe('true')
-})
-
 test('an error from the server is shown', async () => {
-  server.uploads = [{ status: 400, body: { error: 'The file is not valid CSV: unclosed quote' } }]
+  server.upload = { status: 400, body: { error: 'The file is not valid CSV: unclosed quote' } }
   render(<App />)
   await screen.findByText('$5,000.00')
 
@@ -174,7 +153,7 @@ test('a database with no accounts says how to load them', async () => {
 })
 
 test('reset puts the opening balances back and clears the result', async () => {
-  server.uploads = [{ status: 200, body: { transfers: [completed], accounts: afterTransfer } }]
+  server.upload = { status: 200, body: { transfers: [completed], accounts: afterTransfer } }
   render(<App />)
   await screen.findByText('$5,000.00')
   const user = await uploadFile()

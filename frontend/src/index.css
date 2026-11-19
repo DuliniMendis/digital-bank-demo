@@ -11,8 +11,6 @@
   --good-bg: #e3f3ec;
   --bad: #a3261b;
   --bad-bg: #fbe9e7;
-  --warn-bg: #fff6dd;
-  --warn-border: #e6c765;
 
   --sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
@@ -36,8 +34,6 @@
     --good-bg: #173328;
     --bad: #ff9b90;
     --bad-bg: #3b1b18;
-    --warn-bg: #33290d;
-    --warn-border: #6f5a1c;
   }
 }
 
@@ -273,11 +269,6 @@ button.primary {
   background: var(--accent);
 }
 
-button.quiet {
-  border-color: transparent;
-  background: transparent;
-}
-
 button:focus-visible,
 a:focus-visible,
 input:focus-visible {
@@ -295,24 +286,8 @@ input:focus-visible {
   font-size: 0.925rem;
 }
 
-.notice p {
-  margin: 0;
-}
-
 .notice-error {
   color: var(--bad);
   border-color: var(--bad);
   background: var(--bad-bg);
-}
-
-.notice-warning {
-  margin-top: 16px;
-  border-color: var(--warn-border);
-  background: var(--warn-bg);
-}
-
-.notice-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 10px;
 }
