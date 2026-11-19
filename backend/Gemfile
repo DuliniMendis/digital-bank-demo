@@ -2,7 +2,10 @@
 
 source 'https://rubygems.org'
 
-ruby file: '.ruby-version'
+# Any Ruby from 3.3 onwards will do, because that is the oldest version the
+# gems in Gemfile.lock support. The version used for development is in
+# `.ruby-version`.
+ruby '>= 3.3'
 
 # CSV parsing used to be part of Ruby itself. Since Ruby 3.4 it is a
 # separate gem that has to be listed here.

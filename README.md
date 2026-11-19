@@ -6,7 +6,7 @@ would take the sending account below $0 is rejected.
 
 ## Running it
 
-Requires Ruby 4.0.
+Requires Ruby 3.3 or newer.
 
 Start the server:
 
@@ -90,5 +90,27 @@ A few decisions shape the code:
 - **A bad balances file stops everything; a bad transfer does not.** The
   starting balances have to be trustworthy. A bad transfer line is one
   rejected transfer.
-- **One transfers file is processed at a time**, so two uploads cannot both
-  spend the same balance.
+
+## Extensions
+
+This branch is the simplest version that answers the brief. The `extended`
+branch builds on it with the things a real service would need:
+
+- **A Postgres database.** Balances survive a restart. Here they are kept in
+  memory and go back to the balances file each time the server starts.
+- **A history of every transfer.** One row is kept for each line of every
+  uploaded file, whether it completed or was rejected.
+- **Protection against applying the same file twice.** A file whose contents
+  have been seen before is refused unless the sender confirms.
+- **Locking, so uploads that arrive together are safe.** Each transfer runs
+  in a database transaction that locks the two accounts it touches, and each
+  upload takes a lock for the whole file. Two uploads cannot both spend the
+  same balance, and a reader never sees a transfer that is half applied.
+- **A web page**, built with React, for uploading a file and seeing the
+  balances and the history.
+
+Locking was left out of this branch on purpose. The server here can handle
+two requests at once, so two uploads arriving at the same moment could both
+spend the same balance. A database solves that properly with transactions and
+row locks. Without one, the only tool is a single lock around everything,
+which makes every request wait for every other.
