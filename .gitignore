@@ -3,7 +3,7 @@
 
 # Ruby
 .bundle/
-vendor/bundle/
+**/vendor/bundle/
 coverage/
 tmp/
 
