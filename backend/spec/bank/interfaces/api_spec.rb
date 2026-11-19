@@ -3,7 +3,7 @@
 require 'rack/test'
 require 'stringio'
 
-RSpec.describe Bank::Web::Api do
+RSpec.describe Bank::Interfaces::Api, :database do
   include Rack::Test::Methods
 
   # Rack::Test sends its requests to whatever `app` returns.
@@ -11,12 +11,21 @@ RSpec.describe Bank::Web::Api do
     described_class
   end
 
-  # Loading the balances again before each example gives every example the
-  # same starting point, as if the server had just been started.
-  before { described_class.load_balances(fixture_path('account_balances.csv')) }
+  # Every example begins with an empty database, so each one seeds it with
+  # the sample balances first.
+  before do
+    described_class.start(database: database)
+    seed(fixture_path('account_balances.csv'))
+  end
 
   def fixture_path(name)
     File.expand_path("../../fixtures/#{name}", __dir__)
+  end
+
+  def seed(path)
+    accounts = Bank::Infrastructure::AccountRepository.new(database)
+    rows = Bank::Infrastructure::CsvFiles.opening_balances(File.read(path))
+    Bank::Application::SeedAccounts.new(accounts: accounts).call(rows)
   end
 
   # Uploads the CSV text as a file in a form field called "file", the same
@@ -35,7 +44,7 @@ RSpec.describe Bank::Web::Api do
   end
 
   describe 'GET /accounts' do
-    it 'lists the balances loaded at startup' do
+    it 'lists the balances the database was seeded with' do
       get '/accounts'
 
       expect(body['accounts'].first).to eq('number' => '1111234522226789', 'balance' => '5000.00')
@@ -90,32 +99,6 @@ RSpec.describe Bank::Web::Api do
       post_transfers(%("unclosed,quote\n))
 
       expect(last_response.status).to eq(400)
-    end
-  end
-
-  describe 'two files arriving at the same time' do
-    # A stand-in for ProcessTransfers that takes a moment to run, and records
-    # whether a second call started while an earlier one was still running.
-    let(:slow_processor) do
-      Class.new do
-        attr_reader :overlapped
-
-        def call(_requests)
-          @overlapped ||= @busy
-          @busy = true
-          sleep 0.05
-          @busy = false
-          []
-        end
-      end.new
-    end
-
-    it 'are processed one after the other' do
-      allow(Bank::UseCases::ProcessTransfers).to receive(:new).and_return(slow_processor)
-
-      Array.new(2) { Thread.new { post_transfers('') } }.each(&:join)
-
-      expect(slow_processor.overlapped).to be_falsy
     end
   end
 end

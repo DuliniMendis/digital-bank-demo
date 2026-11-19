@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Bank
-  module UseCases
+  module Application
     # One line of the balances file: its line number and the two fields as
     # plain text. Nothing has been validated at this point.
     OpeningBalance = Data.define(:line, :number, :balance)
@@ -10,16 +10,25 @@ module Bank
     # with the line number.
     class InvalidOpeningBalances < StandardError; end
 
-    # Creates an account for each line of the balances file. It stops at the
-    # first bad line, because the transfers should not be run against
-    # starting balances that cannot be trusted.
-    class LoadAccounts
+    # Fills the database with the opening balances: one account for each line
+    # of the balances file. Any accounts already stored are removed first, so
+    # seeding an empty database and seeding one again later (reseeding) are
+    # the same operation.
+    #
+    # It stops at the first bad line, because the transfers should not be run
+    # against starting balances that cannot be trusted. Everything happens in
+    # one transaction, so a bad line leaves the accounts already stored as
+    # they were.
+    class SeedAccounts
       def initialize(accounts:)
         @accounts = accounts
       end
 
       def call(opening_balances)
-        opening_balances.each { |row| add(row) }
+        @accounts.transaction do
+          @accounts.clear
+          opening_balances.each { |row| add(row) }
+        end
       end
 
       private

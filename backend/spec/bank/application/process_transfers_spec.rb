@@ -3,10 +3,10 @@
 # The money rules themselves are covered by the domain specs. These examples
 # cover what ProcessTransfers adds on top: finding the accounts, turning a
 # refusal into a rejection, and working through the list in order.
-RSpec.describe Bank::UseCases::ProcessTransfers do
+RSpec.describe Bank::Application::ProcessTransfers, :database do
   subject(:process_transfers) { described_class.new(accounts: accounts) }
 
-  let(:accounts) { Bank::Infrastructure::InMemoryAccountRepository.new }
+  let(:accounts) { Bank::Infrastructure::AccountRepository.new(database) }
   let(:alice) { '1111234522226789' }
   let(:bob) { '1212343433335665' }
   let(:stranger) { '9999999999999999' }
@@ -26,7 +26,7 @@ RSpec.describe Bank::UseCases::ProcessTransfers do
   end
 
   def request(from, to, amount, line: 1)
-    Bank::UseCases::TransferRequest.new(line: line, from: from, to: to, amount: amount)
+    Bank::Application::TransferRequest.new(line: line, from: from, to: to, amount: amount)
   end
 
   def balance_of(number)
@@ -72,6 +72,20 @@ RSpec.describe Bank::UseCases::ProcessTransfers do
       process_transfers.call([request(alice, stranger, '1.00')])
 
       expect(balance_of(alice)).to eq('10.00')
+    end
+  end
+
+  # This is why each transfer runs in a transaction.
+  context 'when saving fails halfway through a transfer' do
+    before do
+      receiver = having_attributes(number: Bank::Domain::AccountNumber.new(value: bob))
+      allow(accounts).to receive(:save).and_call_original
+      allow(accounts).to receive(:save).with(receiver).and_raise('the database went away')
+    end
+
+    it 'undoes the withdrawal that was already saved' do
+      expect { process_transfers.call([request(alice, bob, '3.00')]) }
+        .to raise_error('the database went away').and(not_change { balance_of(alice) })
     end
   end
 

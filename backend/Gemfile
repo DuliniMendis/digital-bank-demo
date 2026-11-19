@@ -8,6 +8,11 @@ ruby file: '.ruby-version'
 # separate gem that has to be listed here.
 gem 'csv'
 
+# pg is the Postgres driver. Sequel sits on top of it and lets the code
+# describe queries in Ruby instead of writing SQL strings.
+gem 'pg'
+gem 'sequel'
+
 # Sinatra is the web framework, Puma is the server it runs on, and rackup
 # provides the command that starts it.
 gem 'puma'

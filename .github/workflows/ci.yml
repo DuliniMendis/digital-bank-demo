@@ -3,7 +3,7 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, extended]
 
 permissions:
   contents: read
@@ -15,6 +15,25 @@ jobs:
     defaults:
       run:
         working-directory: backend
+
+    # A throwaway Postgres database that lives only for this run. The specs
+    # tagged :database use it.
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: bank_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/bank_test
+
     steps:
       - uses: actions/checkout@v5
 

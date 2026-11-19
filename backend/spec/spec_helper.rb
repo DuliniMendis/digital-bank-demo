@@ -6,6 +6,10 @@
 ENV['APP_ENV'] = 'test'
 
 require 'bank'
+require_relative 'support/database'
+
+# Lets a spec say "and this did not change" after another expectation.
+RSpec::Matchers.define_negated_matcher :not_change, :change
 
 RSpec.configure do |config|
   config.mock_with :rspec do |mocks|

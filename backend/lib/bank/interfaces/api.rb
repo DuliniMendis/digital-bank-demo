@@ -4,28 +4,20 @@ require 'json'
 require 'sinatra/base'
 
 module Bank
-  module Web
+  module Interfaces
     # The HTTP API. It contains no business logic: each route reads the
-    # request, calls a use case and returns the result as JSON.
+    # request, calls an application service and returns the result as JSON.
     #
     #   GET  /accounts    the current balance of every account
     #   POST /transfers   applies a transfers CSV, uploaded as form field "file"
     #
-    # The accounts live in memory, so balances carry over from one request to
-    # the next and go back to their starting values when the server restarts.
+    # The accounts are kept in Postgres, so balances are still there after
+    # the server restarts. The server never loads balances itself: the
+    # database is filled by seeding it.
     class Api < Sinatra::Base
-      # Requests can be handled at the same time. Two uploads processed at
-      # the same moment could both spend the same balance, so this lock makes
-      # them run one after the other.
-      ONE_AT_A_TIME = Mutex.new
-
-      # Reads the balances file into memory. Called once, at startup. A bad
-      # file raises an error, so the server does not start.
-      def self.load_balances(path)
-        accounts = Infrastructure::InMemoryAccountRepository.new
-        rows = Infrastructure::CsvFiles.opening_balances(File.read(path))
-        UseCases::LoadAccounts.new(accounts: accounts).call(rows)
-        set :accounts, accounts
+      # Tells the app which database to use. Called once, at startup.
+      def self.start(database:)
+        set :accounts, Infrastructure::AccountRepository.new(database)
       end
 
       get '/accounts' do
@@ -39,7 +31,7 @@ module Bank
         halt 400, json(error: 'Send the transfers CSV as a form field called "file".') unless csv
 
         requests = Infrastructure::CsvFiles.transfer_requests(csv)
-        results = ONE_AT_A_TIME.synchronize { process(requests) }
+        results = process(requests)
         json(transfers: results.map { |result| transfer_as_json(result) }, accounts: accounts_as_json)
       rescue CSV::MalformedCSVError => e
         halt 400, json(error: "The file is not valid CSV: #{e.message}")
@@ -52,7 +44,7 @@ module Bank
         end
 
         def process(requests)
-          UseCases::ProcessTransfers.new(accounts: settings.accounts).call(requests)
+          Application::ProcessTransfers.new(accounts: settings.accounts).call(requests)
         end
 
         # Balances are sent as strings such as "4820.50". A JSON number would
