@@ -16,9 +16,7 @@ module Bank
         super
       end
 
-      # The withdrawal comes first on purpose. If the source account cannot
-      # afford it, an error is raised before anything is deposited, so neither
-      # balance changes.
+      # Withdraws first. If that is refused, deposit does not go ahead.
       def apply(source:, destination:)
         source.withdraw(amount)
         destination.deposit(amount)

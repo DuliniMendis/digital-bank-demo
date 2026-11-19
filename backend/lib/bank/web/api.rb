@@ -19,12 +19,8 @@ module Bank
       # them run one after the other.
       ONE_AT_A_TIME = Mutex.new
 
-      # Meant to be called once at startup, before the server accepts any
-      # request. A bad balances file raises an error here, which stops the
-      # server from starting.
-      #
-      # `set :accounts` stores the repository on the app. The routes read it
-      # back as `settings.accounts`.
+      # Reads the balances file into memory. Called once, at startup. A bad
+      # file raises an error, so the server does not start.
       def self.load_balances(path)
         accounts = Infrastructure::InMemoryAccountRepository.new
         rows = Infrastructure::CsvFiles.opening_balances(File.read(path))
@@ -68,8 +64,6 @@ module Bank
           end
         end
 
-        # The fields of the original request (line, from, to, amount) plus
-        # what happened to it.
         def transfer_as_json(result)
           result.request.to_h.merge(
             status: result.completed? ? 'completed' : 'rejected',
