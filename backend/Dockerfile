@@ -2,9 +2,8 @@
 # this image, because its built-in Ruby runtime cannot load the Postgres
 # driver.
 
-# This has to be the Ruby version the project is pinned to, or installing
-# the gems fails. "slim" is a small Debian Linux with Ruby installed and
-# little else.
+# This is the Ruby version the code is developed on. "slim" is a small
+# Debian Linux with Ruby installed and little else.
 FROM ruby:4.0.9-slim
 
 # A few gems contain C code that is compiled when they are installed, which
