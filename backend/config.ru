@@ -2,7 +2,7 @@
 
 # The `rackup` command reads this file to start the server:
 #
-#   BALANCES_FILE=spec/fixtures/account_balances.csv bundle exec rackup
+#   BALANCES_FILE=path/to/balances.csv bundle exec rackup
 #
 # The balances file is loaded first, so the server never accepts a request
 # without its accounts in place.

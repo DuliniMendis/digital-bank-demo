@@ -29,8 +29,7 @@ module Bank
       private
 
       # Every broken business rule raises a Domain::Error, so the single
-      # rescue below covers every reason a transfer can be rejected: a bad
-      # account number or amount, an unknown account, or insufficient funds.
+      # rescue below turns any of them into a rejection.
       def process(request)
         transfer = build_transfer(request)
         @accounts.transaction { move_money(transfer) }

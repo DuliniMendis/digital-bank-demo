@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-# Run Sinatra in test mode. In its default development mode it rejects any
-# request that is not addressed to localhost, and the test client addresses
-# its requests to example.org.
+# Run Sinatra in test mode. In its default development mode it only accepts
+# requests addressed to this machine, which would turn away the requests
+# made by the specs.
 ENV['APP_ENV'] = 'test'
 
 require 'bank'
