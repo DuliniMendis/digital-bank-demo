@@ -162,6 +162,17 @@ test('an error from the server is shown', async () => {
   expect(await screen.findByRole('alert')).toHaveTextContent('The file is not valid CSV: unclosed quote')
 })
 
+test('a database with no accounts says how to load them', async () => {
+  server.accounts = { status: 200, body: { accounts: [] } }
+  render(<App />)
+
+  expect(await screen.findByText(/There are no accounts yet/)).toBeInTheDocument()
+
+  await userEvent.setup().click(screen.getByRole('button', { name: 'Reset to opening balances' }))
+
+  expect(await section('Accounts').findByText('$5,000.00')).toBeInTheDocument()
+})
+
 test('reset puts the opening balances back and clears the result', async () => {
   server.uploads = [{ status: 200, body: { transfers: [completed], accounts: afterTransfer } }]
   render(<App />)

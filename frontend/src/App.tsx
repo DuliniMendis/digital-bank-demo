@@ -92,7 +92,15 @@ export default function App() {
 
       <section aria-labelledby="accounts-heading">
         <h2 id="accounts-heading">Accounts</h2>
-        {busy === 'loading' ? <p className="empty">Loading…</p> : <AccountsTable accounts={accounts} />}
+        {busy === 'loading' && <p className="empty">Loading…</p>}
+        {busy !== 'loading' && accounts.length > 0 && <AccountsTable accounts={accounts} />}
+        {/* The server never loads balances by itself, so a new database has
+            no accounts until it is seeded. The reset button does that. */}
+        {busy !== 'loading' && accounts.length === 0 && !error && (
+          <p className="empty">
+            There are no accounts yet. Press "Reset to opening balances" to load them.
+          </p>
+        )}
       </section>
 
       <section aria-labelledby="upload-heading">

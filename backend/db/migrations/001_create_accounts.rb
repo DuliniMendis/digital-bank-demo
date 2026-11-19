@@ -11,8 +11,8 @@ Sequel.migration do
       # Sixteen digits, and the same number can never be stored twice.
       String :number, size: 16, null: false, unique: true
 
-      # Whole cents, to match Money. The database refuses a negative
-      # balance as a last line of defence behind Account#withdraw.
+      # Whole cents. The database refuses a negative balance, as a last
+      # line of defence behind the same rule in the domain.
       Bignum :balance_cents, null: false
       constraint(:balance_is_not_negative) { balance_cents >= 0 }
     end

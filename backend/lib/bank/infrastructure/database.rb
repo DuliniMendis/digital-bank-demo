@@ -19,6 +19,16 @@ module Bank
         Sequel.extension :migration
         Sequel::Migrator.run(database, MIGRATIONS)
       end
+
+      # Connects to the database named in the DATABASE_URL environment
+      # variable and brings its tables up to date. The server and the seed
+      # script both start this way.
+      def self.from_environment
+        url = ENV.fetch('DATABASE_URL') do
+          abort 'Set DATABASE_URL to the address of the Postgres database.'
+        end
+        connect(url).tap { |database| migrate(database) }
+      end
     end
   end
 end
