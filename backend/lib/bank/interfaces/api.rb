@@ -25,9 +25,7 @@ module Bank
       end
 
       post '/transfers' do
-        # Sinatra exposes an uploaded file as a Hash with a :tempfile entry.
-        # `csv` is nil when no file was sent.
-        csv = params.dig(:file, :tempfile)&.read
+        csv = uploaded_csv
         halt 400, json(error: 'Send the transfers CSV as a form field called "file".') unless csv
 
         requests = Infrastructure::CsvFiles.transfer_requests(csv)
@@ -41,6 +39,14 @@ module Bank
         def json(data)
           content_type :json
           JSON.generate(data)
+        end
+
+        # Sinatra exposes an uploaded file as a Hash with a :tempfile entry.
+        # The "file" field is missing when nothing was sent, and is a plain
+        # String when it was sent as text and not as a file. Both give nil.
+        def uploaded_csv
+          file = params[:file]
+          file[:tempfile]&.read if file.is_a?(Hash)
         end
 
         def process(requests)
