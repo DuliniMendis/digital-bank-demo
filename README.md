@@ -8,17 +8,23 @@ would take the sending account below $0 is rejected.
 
 Requires Ruby 4.0.
 
-Start the server with a balances file:
+Start the server:
 
 ```bash
 cd backend
 bundle install
-BALANCES_FILE=spec/fixtures/account_balances.csv bundle exec rackup
+bundle exec rackup
 ```
 
-The balances are loaded into memory and the server listens on
-`http://localhost:9292`. A bad line in the balances file stops the server from
-starting, and the error names the line.
+This loads the sample balances into memory and listens on
+`http://localhost:9292`. To start from your own balances file, name it:
+
+```bash
+BALANCES_FILE=path/to/balances.csv bundle exec rackup
+```
+
+A bad line in the balances file stops the server from starting, and the error
+names the line.
 
 From a second terminal, in `backend/`, post a day's transfers:
 
