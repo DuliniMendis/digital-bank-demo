@@ -31,6 +31,8 @@ simple code matters more here than clever code.
   new file from `main` it stops with a "file location" conflict and suggests
   the path inside `backend/`, which is the one to accept. Check that nothing
   from the Ruby app ended up at the root before committing the merge.
+- **Each branch has its own `AGENTS.md`.** The one on `main` leaves out what
+  only applies here. In a merge of `main` into `extended`, keep this one.
 - **`main`'s README and CI workflow assume the root layout.** Do not copy
   their paths or their missing `cd backend` lines into `extended`.
 
