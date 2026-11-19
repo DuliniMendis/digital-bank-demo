@@ -2,12 +2,13 @@
 # this image, because its built-in Ruby runtime cannot load the Postgres
 # driver.
 
-# The same Ruby version as backend/.ruby-version. "slim" is a small Debian
-# Linux with Ruby installed and little else.
+# This has to be the Ruby version the project is pinned to, or installing
+# the gems fails. "slim" is a small Debian Linux with Ruby installed and
+# little else.
 FROM ruby:4.0.9-slim
 
-# A few gems (puma is one) contain C code that is compiled when they are
-# installed, which needs a compiler.
+# A few gems contain C code that is compiled when they are installed, which
+# needs a compiler.
 RUN apt-get update \
  && apt-get install -y --no-install-recommends build-essential \
  && rm -rf /var/lib/apt/lists/*
@@ -36,6 +37,6 @@ ENV APP_ENV=production \
     BALANCES_FILE=spec/fixtures/account_balances.csv \
     PORT=80
 
-# `--host 0.0.0.0` accepts requests from outside the container. The default
-# only accepts them from inside it.
+# `--host 0.0.0.0` makes the server accept requests from outside the
+# container.
 CMD ["sh", "-c", "bundle exec rackup --host 0.0.0.0 --port $PORT"]
