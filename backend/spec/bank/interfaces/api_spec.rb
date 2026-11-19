@@ -14,25 +14,19 @@ RSpec.describe Bank::Interfaces::Api, :database do
   # Every example begins with an empty database, so each one seeds it with
   # the sample balances first.
   before do
-    described_class.start(database: database)
-    seed(fixture_path('account_balances.csv'))
+    described_class.start(database: database, balances_file: fixture_path('account_balances.csv'))
+    described_class.reseed
   end
 
   def fixture_path(name)
     File.expand_path("../../fixtures/#{name}", __dir__)
   end
 
-  def seed(path)
-    accounts = Bank::Infrastructure::AccountRepository.new(database)
-    rows = Bank::Infrastructure::CsvFiles.opening_balances(File.read(path))
-    Bank::Application::SeedAccounts.new(accounts: accounts).call(rows)
-  end
-
   # Uploads the CSV text as a file in a form field called "file", the same
   # way `curl -F file=@transfers.csv` does.
   def post_transfers(csv_text)
     file = Rack::Test::UploadedFile.new(StringIO.new(csv_text), 'text/csv', original_filename: 'transfers.csv')
-    post '/transfers', file: file
+    post '/api/transfers', file: file
   end
 
   def body
@@ -40,18 +34,21 @@ RSpec.describe Bank::Interfaces::Api, :database do
   end
 
   def balances
+    get '/api/accounts'
     body['accounts'].to_h { |account| [account['number'], account['balance']] }
   end
 
-  describe 'GET /accounts' do
+  let(:pay_one_hundred) { "1111234522226789,1212343433335665,100.00\n" }
+
+  describe 'GET /api/accounts' do
     it 'lists the balances the database was seeded with' do
-      get '/accounts'
+      get '/api/accounts'
 
       expect(body['accounts'].first).to eq('number' => '1111234522226789', 'balance' => '5000.00')
     end
   end
 
-  describe 'POST /transfers' do
+  describe 'POST /api/transfers' do
     context 'with the sample transfers file' do
       let(:expected_balances) do
         {
@@ -90,19 +87,19 @@ RSpec.describe Bank::Interfaces::Api, :database do
     end
 
     it 'keeps the balances between one post and the next' do
-      2.times { post_transfers("1111234522226789,1212343433335665,100.00\n") }
+      2.times { post_transfers(pay_one_hundred) }
 
       expect(balances['1111234522226789']).to eq('4800.00')
     end
 
     it 'answers 400 when no file is sent' do
-      post '/transfers'
+      post '/api/transfers'
 
       expect(last_response.status).to eq(400)
     end
 
     it 'answers 400 when "file" is sent as text and not as a file' do
-      post '/transfers', file: "1111234522226789,1212343433335665,1.00\n"
+      post '/api/transfers', file: "1111234522226789,1212343433335665,1.00\n"
 
       expect(last_response.status).to eq(400)
     end
@@ -111,6 +108,36 @@ RSpec.describe Bank::Interfaces::Api, :database do
       post_transfers(%("unclosed,quote\n))
 
       expect(last_response.status).to eq(400)
+    end
+  end
+
+  describe 'POST /api/reset' do
+    before do
+      post_transfers(pay_one_hundred)
+      post '/api/reset'
+    end
+
+    it 'puts the balances back to the balances file' do
+      expect(balances['1111234522226789']).to eq('5000.00')
+    end
+  end
+
+  describe 'POST /api/reset on a database that was never seeded' do
+    before do
+      database[:accounts].delete
+      post '/api/reset'
+    end
+
+    it 'seeds it from the balances file' do
+      expect(balances['1111234522226789']).to eq('5000.00')
+    end
+  end
+
+  describe 'an address that does not exist' do
+    it 'answers 404 with a JSON error' do
+      get '/api/nothing'
+
+      expect([last_response.status, body]).to match([404, { 'error' => a_string_including('nothing') }])
     end
   end
 end

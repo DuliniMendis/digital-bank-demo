@@ -34,22 +34,25 @@ Then start the server:
 DATABASE_URL=postgres://localhost/bank_development bundle exec rackup
 ```
 
-It listens on `http://localhost:9292`. The server never loads balances itself,
-so it shows no accounts until the database has been seeded.
+It listens on `http://localhost:9292`. The server never loads balances when it
+starts, so it shows no accounts until the database has been seeded.
 
 From a second terminal, in `backend/`, post a day's transfers:
 
 ```bash
-curl -F file=@spec/fixtures/transfers.csv http://localhost:9292/transfers
+curl -F file=@spec/fixtures/transfers.csv http://localhost:9292/api/transfers
 ```
 
 The response lists each transfer as `completed` or `rejected`, with the line
 number and the reason for a rejection, followed by the balances afterwards.
 
-To see the balances at any time:
+Nothing stops the same file being posted twice. It is applied a second time.
+
+The other routes:
 
 ```bash
-curl http://localhost:9292/accounts
+curl http://localhost:9292/api/accounts           # the current balances
+curl -X POST http://localhost:9292/api/reset      # reseeds: puts the opening balances back
 ```
 
 A header row is optional in both CSV files. A balances line is
@@ -57,8 +60,10 @@ A header row is optional in both CSV files. A balances line is
 files are in `backend/spec/fixtures/`.
 
 Balances are kept in the database, so they are still there after the server
-restarts. To go back to the opening balances, run the seed command again. It
-replaces whatever accounts the database holds.
+restarts. To go back to the opening balances, reseed: either post to the reset
+route or run the seed command again. Both replace whatever accounts the
+database holds. The reset route reads the same balances file as the seed
+command, so start the server with the same `BALANCES_FILE` if you named one.
 
 ## Running the tests
 

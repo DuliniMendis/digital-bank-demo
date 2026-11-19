@@ -8,23 +8,33 @@ module Bank
     # The HTTP API. It contains no business logic: each route reads the
     # request, calls an application service and returns the result as JSON.
     #
-    #   GET  /accounts    the current balance of every account
-    #   POST /transfers   applies a transfers CSV, uploaded as form field "file"
+    #   GET  /api/accounts    the current balance of every account
+    #   POST /api/transfers   applies a transfers CSV, uploaded as form field "file"
+    #   POST /api/reset       reseeds: puts the opening balances back
     #
     # The accounts are kept in Postgres, so balances are still there after
-    # the server restarts. The server never loads balances itself: the
-    # database is filled by seeding it.
+    # the server restarts. The server never loads balances when it starts:
+    # the database is filled by seeding it.
     class Api < Sinatra::Base
-      # Tells the app which database to use. Called once, at startup.
-      def self.start(database:)
+      # Tells the app which database to use, and which balances file a reset
+      # goes back to. Called once, at startup.
+      def self.start(database:, balances_file:)
         set :accounts, Infrastructure::AccountRepository.new(database)
+        set :balances_file, balances_file
       end
 
-      get '/accounts' do
+      # Removes the accounts and loads the balances file into the database
+      # again.
+      def self.reseed
+        opening_balances = Infrastructure::CsvFiles.opening_balances(File.read(balances_file))
+        Application::SeedAccounts.new(accounts: accounts).call(opening_balances)
+      end
+
+      get '/api/accounts' do
         json(accounts: accounts_as_json)
       end
 
-      post '/transfers' do
+      post '/api/transfers' do
         csv = uploaded_csv
         halt 400, json(error: 'Send the transfers CSV as a form field called "file".') unless csv
 
@@ -33,6 +43,16 @@ module Bank
         json(transfers: results.map { |result| transfer_as_json(result) }, accounts: accounts_as_json)
       rescue CSV::MalformedCSVError => e
         halt 400, json(error: "The file is not valid CSV: #{e.message}")
+      end
+
+      post '/api/reset' do
+        self.class.reseed
+        json(accounts: accounts_as_json)
+      end
+
+      # An unknown address gets a JSON error, like every other failure.
+      not_found do
+        json(error: 'There is nothing at this address.')
       end
 
       helpers do
