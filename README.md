@@ -109,24 +109,22 @@ four layers, and each one only depends on the ones above it in this table.
 The domain layer is plain Ruby with no knowledge of files, the database or
 HTTP, so the rules can be read and tested on their own.
 
-There are three use cases:
+There are two use cases:
 
-| Use case             | What it does                                                             |
-|----------------------|--------------------------------------------------------------------------|
-| `SeedAccounts`       | Empties the accounts and the history, then stores one account for each line of the balances file. Seeds and reseeds. |
-| `ProcessTransfers`   | Applies a list of transfers in order, completing or rejecting each one.  |
-| `ApplyTransfersFile` | Refuses a file seen before, runs `ProcessTransfers`, records the history.|
+| Use case           | What it does                                                             |
+|--------------------|--------------------------------------------------------------------------|
+| `SeedAccounts`     | Empties the accounts and the history, then stores one account for each line of the balances file. Seeds and reseeds. |
+| `ProcessTransfers` | Refuses a file seen before, applies its transfers in order, completing or rejecting each one, and records them in the history. |
 
 A posted transfers file goes through the layers like this:
 
 1. `Web::Api` reads the upload and passes the text to `Infrastructure::CsvFiles`,
    which splits it into rows and works out the file's fingerprint.
-2. `UseCases::ApplyTransfersFile` checks the history for that fingerprint, then
-   hands the rows to `UseCases::ProcessTransfers`.
-3. `ProcessTransfers` builds a `Transfer` from each row, finds the two accounts
-   and asks the transfer to apply itself.
-4. `ApplyTransfersFile` records every result in the history.
-5. `Web::Api` returns each result, and the balances, as JSON.
+2. `UseCases::ProcessTransfers` checks the history for that fingerprint. Then it
+   builds a `Transfer` from each row, finds the two accounts and asks the
+   transfer to apply itself.
+3. `ProcessTransfers` records every result in the history.
+4. `Web::Api` returns each result, and the balances, as JSON.
 
 ### Storage
 
