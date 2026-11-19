@@ -42,8 +42,7 @@ module Bank
       end
 
       # Everything inside the block is saved together. If the block raises
-      # an error, the database undoes all of it. The `&` passes the caller's
-      # block straight on to Sequel.
+      # an error, the database undoes all of it.
       def transaction(&)
         @database.transaction(&)
       end

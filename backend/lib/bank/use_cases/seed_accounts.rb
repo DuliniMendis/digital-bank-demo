@@ -2,14 +2,15 @@
 
 module Bank
   module UseCases
-    # Puts the system back to how it was before any transfers file arrived:
-    # the history is emptied and the accounts are replaced with the opening
-    # balances.
+    # Fills the database with the opening balances. Any accounts already
+    # stored are removed first, and so is the transfer history, so seeding an
+    # empty database and seeding one again later (reseeding) are the same
+    # operation.
     #
     # It runs in one transaction. If the opening balances are rejected, the
-    # error is raised and the existing accounts and history are left as they
-    # were.
-    class Reset
+    # error is raised and the accounts and history already stored are left as
+    # they were.
+    class SeedAccounts
       def initialize(accounts:, history:)
         @accounts = accounts
         @history = history

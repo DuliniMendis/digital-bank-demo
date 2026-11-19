@@ -13,21 +13,30 @@ same file twice.
 
 Requires Ruby 4.0 and a running Postgres.
 
-Create an empty database once, then start the server with it and a balances
-file:
+Create an empty database and seed it with the opening balances. Both are done
+once:
 
 ```bash
 cd backend
 bundle install
 createdb bank_development
-DATABASE_URL=postgres://localhost/bank_development \
-BALANCES_FILE=spec/fixtures/account_balances.csv bundle exec rackup
+DATABASE_URL=postgres://localhost/bank_development bundle exec ruby db/seed.rb
 ```
 
-The server creates its tables, loads the balances and listens on
-`http://localhost:9292`. The balances file is only loaded when the database
-has no accounts yet. A bad line in it stops the server from starting, and the
-error names the line.
+This loads the sample balances. To seed from your own balances file, add
+`BALANCES_FILE=path/to/balances.csv` in front of the command as well.
+
+A bad line in the balances file stops the seeding, and the error names the
+line. Nothing is stored from a file with a bad line.
+
+Then start the server:
+
+```bash
+DATABASE_URL=postgres://localhost/bank_development bundle exec rackup
+```
+
+It listens on `http://localhost:9292`. The server never loads balances when it
+starts, so it shows no accounts until the database has been seeded.
 
 From a second terminal, in `backend/`, post a day's transfers:
 
@@ -50,15 +59,19 @@ The other routes:
 ```bash
 curl http://localhost:9292/api/accounts           # the current balances
 curl http://localhost:9292/api/transfers          # every transfer so far, newest file first
-curl -X POST http://localhost:9292/api/reset      # back to the balances file, with no history
+curl -X POST http://localhost:9292/api/reset      # reseeds: opening balances again, no history
 ```
 
-Neither CSV file has a header row. A balances line is `account number,balance`
-and a transfers line is `from,to,amount`. Sample files are in
-`backend/spec/fixtures/`.
+A header row is optional in both CSV files. A balances line is
+`account number,balance` and a transfers line is `from,to,amount`. Sample
+files are in `backend/spec/fixtures/`.
 
 Balances and history are kept in the database, so they are still there after
-the server restarts.
+the server restarts. To go back to the opening balances, reseed: either post
+to the reset route or run the seed command again. Both replace the accounts
+and empty the history. The reset route reads the same balances file as the
+seed command, so start the server with the same `BALANCES_FILE` if you named
+one.
 
 ## Running the tests
 
@@ -103,7 +116,7 @@ There are four use cases:
 | `LoadAccounts`       | Creates an account for each line of the balances file.                   |
 | `ProcessTransfers`   | Applies a list of transfers in order, completing or rejecting each one.  |
 | `ApplyTransfersFile` | Refuses a file seen before, runs `ProcessTransfers`, records the history.|
-| `Reset`              | Empties the history and loads the opening balances again.                |
+| `SeedAccounts`       | Empties the accounts and the history, then runs `LoadAccounts`. Seeds and reseeds. |
 
 A posted transfers file goes through the layers like this:
 
@@ -127,7 +140,7 @@ objects from `infrastructure/`:
 | `PostgresTransferHistory`   | `transfers` | One row per line of every uploaded transfers file.    |
 
 The tables are created by the files in `backend/db/migrations/`, which the
-server runs when it starts.
+server and the seed command both run when they start.
 
 ### Decisions that shape the code
 

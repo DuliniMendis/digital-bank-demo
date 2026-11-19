@@ -11,26 +11,24 @@ module Bank
     #   GET  /api/accounts    the current balance of every account
     #   POST /api/transfers   applies a transfers CSV, uploaded as form field "file"
     #   GET  /api/transfers   every transfer from every uploaded file
-    #   POST /api/reset       back to the opening balances, with no history
+    #   POST /api/reset       reseeds: opening balances again, and no history
     #
     # Accounts and history are kept in Postgres, so they are still there
-    # after the server restarts.
+    # after the server restarts. The server never loads balances when it
+    # starts: the database is filled by seeding it.
     class Api < Sinatra::Base
-      # Connects the app to the database. Called once, at startup. The
-      # balances file is only loaded when the database has no accounts yet,
-      # which is the first start. Later starts keep the balances the database
-      # already holds.
+      # Tells the app which database to use, and which balances file a reset
+      # goes back to. Called once, at startup.
       def self.start(database:, balances_file:)
         set :accounts, Infrastructure::PostgresAccountRepository.new(database)
         set :history, Infrastructure::PostgresTransferHistory.new(database)
-        set :opening_balances, Infrastructure::CsvFiles.opening_balances(File.read(balances_file))
-        reset if accounts.all.empty?
+        set :balances_file, balances_file
       end
 
-      # Empties the history and loads the balances file again. A bad file
-      # raises an error, so on the first start the server does not start.
-      def self.reset
-        UseCases::Reset.new(accounts: accounts, history: history).call(opening_balances)
+      # Empties the database and loads the balances file into it again.
+      def self.reseed
+        opening_balances = Infrastructure::CsvFiles.opening_balances(File.read(balances_file))
+        UseCases::SeedAccounts.new(accounts: accounts, history: history).call(opening_balances)
       end
 
       get '/api/accounts' do
@@ -58,7 +56,7 @@ module Bank
       end
 
       post '/api/reset' do
-        self.class.reset
+        self.class.reseed
         json(accounts: accounts_as_json)
       end
 
