@@ -16,9 +16,9 @@ require_relative 'lib/bank'
 sample_balances = File.expand_path('spec/fixtures/account_balances.csv', __dir__)
 balances_file = ENV.fetch('BALANCES_FILE', sample_balances)
 
-Bank::Web::Api.start(
+Bank::Interfaces::Api.start(
   database: Bank::Infrastructure::Database.from_environment,
   balances_file: balances_file
 )
 
-run Bank::Web::Api
+run Bank::Interfaces::Api

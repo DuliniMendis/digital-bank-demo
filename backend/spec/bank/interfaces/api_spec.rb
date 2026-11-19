@@ -3,7 +3,7 @@
 require 'rack/test'
 require 'stringio'
 
-RSpec.describe Bank::Web::Api, :database do
+RSpec.describe Bank::Interfaces::Api, :database do
   include Rack::Test::Methods
 
   # Rack::Test sends its requests to whatever `app` returns.
