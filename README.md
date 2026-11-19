@@ -241,8 +241,8 @@ Two things follow from how containers run on Vercel:
 
 - **A container is started when a request arrives and stopped when it has been
   idle.** Nothing can be kept in the container's memory or on its disk, which
-  is why the accounts and the history are in Postgres.
-- **Every start runs `config.ru`**, so the tables are created on the first
+  is why the accounts are in Postgres.
+- **Every start runs `config.ru`**, so the table is created on the first
   start and left alone on later ones.
 
 To deploy by hand, from the repository root:
