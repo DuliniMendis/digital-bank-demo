@@ -87,9 +87,9 @@ server passes those requests on to port 9292 (see `frontend/vite.config.ts`).
 
 ## Running the tests
 
-The specs tagged `:database` need a running Postgres with an empty database
-called `bank_test`. They create the tables themselves and undo their own
-changes.
+Most specs are tagged `:database` and need a running Postgres with an empty
+database called `bank_test`. They create the tables themselves and undo their
+own changes.
 
 ```bash
 cd backend
@@ -99,8 +99,8 @@ bundle exec rubocop
 ```
 
 To use a database somewhere else, set `DATABASE_URL`, for example
-`postgres://user:password@localhost/bank_test`. To run only the specs that
-need no database:
+`postgres://user:password@localhost/bank_test`. The specs for the domain and
+for reading CSV files need no database. To run only those:
 
 ```bash
 bundle exec rspec --tag '~database'
@@ -160,11 +160,6 @@ objects from `infrastructure/`:
 |-----------------------------|-------------|-------------------------------------------------------|
 | `PostgresAccountRepository` | `accounts`  | Each account number and its balance in whole cents.   |
 | `PostgresTransferHistory`   | `transfers` | One row per line of every uploaded transfers file.    |
-
-`InMemoryAccountRepository` has the same methods as the Postgres one and keeps
-accounts in a Hash. The specs for the use cases use it where no database is
-needed, and one shared set of specs
-(`spec/support/account_repository_examples.rb`) runs against both.
 
 The tables are created by the files in `backend/db/migrations/`, which the
 server runs when it starts.
