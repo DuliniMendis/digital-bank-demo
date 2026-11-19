@@ -4,9 +4,6 @@ module Bank
   module Infrastructure
     # Keeps accounts in the `accounts` table of a Postgres database.
     #
-    # It has the same methods as InMemoryAccountRepository, so the use cases
-    # work with either one without knowing which they were given.
-    #
     # Each row is turned into an Account on the way out, and an Account is
     # turned back into a row on the way in. Nothing outside this class sees
     # a database row.

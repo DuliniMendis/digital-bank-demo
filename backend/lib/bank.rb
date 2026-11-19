@@ -23,7 +23,6 @@ require_relative 'bank/use_cases/process_transfers'
 require_relative 'bank/use_cases/apply_transfers_file'
 require_relative 'bank/use_cases/reset'
 
-require_relative 'bank/infrastructure/in_memory_account_repository'
 require_relative 'bank/infrastructure/database'
 require_relative 'bank/infrastructure/postgres_account_repository'
 require_relative 'bank/infrastructure/postgres_transfer_history'
