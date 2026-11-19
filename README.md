@@ -48,9 +48,17 @@ Balances are only reset when the server restarts.
 
 ## Running the tests
 
+Run `bundle install` first if you have not started the server yet.
+
 ```bash
-bundle exec rspec
-bundle exec rubocop
+bundle exec rspec       # the specs
+bundle exec rubocop     # the linter
+```
+
+To run the specs in one file, name it:
+
+```bash
+bundle exec rspec spec/bank/domain/money_spec.rb
 ```
 
 ## Architecture
@@ -110,3 +118,64 @@ Locking was left out of this branch on purpose. The server here can handle
 two requests at once, so two uploads arriving at the same moment could both
 spend the same balance. A database solves that properly with transactions and
 row locks.
+
+### Running the extended branch
+
+It requires Node 26 and a running Postgres as well as Ruby. On that branch the
+Ruby code is in `backend/` and the web page is in `frontend/`.
+
+Switch to the branch, then create a database and seed it with the sample
+balances. Creating and seeding are done once:
+
+```bash
+git switch extended
+cd backend
+bundle install
+createdb bank_development
+DATABASE_URL=postgres://localhost/bank_development bundle exec ruby db/seed.rb
+```
+
+Start the API, which listens on `http://localhost:9292`:
+
+```bash
+DATABASE_URL=postgres://localhost/bank_development bundle exec rackup
+```
+
+Start the web page from a second terminal, then open `http://localhost:5173`:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+The Ruby specs and the linter need an empty database called `bank_test`:
+
+```bash
+cd backend
+createdb bank_test      # once
+bundle exec rspec
+bundle exec rubocop
+```
+
+The web page has its own tests and linter, which need neither the API nor a
+database:
+
+```bash
+cd frontend
+npm test
+npm run lint
+```
+
+The end-to-end tests open the page in a real browser against the real API and
+a database of their own. They start the API and the page themselves, so
+nothing else needs to be running:
+
+```bash
+cd frontend
+createdb bank_e2e                     # once
+npx playwright install chromium       # once: downloads the browser
+npm run e2e
+```
+
+The README on the `extended` branch explains each of these in more detail.
