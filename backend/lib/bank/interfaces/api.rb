@@ -40,19 +40,14 @@ module Bank
       end
 
       post '/api/transfers' do
-        # Sinatra exposes an uploaded file as a Hash with a :tempfile entry.
-        # `csv` is nil when no file was sent.
-        csv = params.dig(:file, :tempfile)&.read
+        csv = uploaded_csv
         halt 400, json(error: 'Send the transfers CSV as a form field called "file".') unless csv
 
-        results = apply(csv, apply_again: params[:apply_again] == 'true')
+        requests = Infrastructure::CsvFiles.transfer_requests(csv)
+        results = process(requests)
         json(transfers: results.map { |result| transfer_as_json(result) }, accounts: accounts_as_json)
       rescue CSV::MalformedCSVError => e
         halt 400, json(error: "The file is not valid CSV: #{e.message}")
-      rescue Application::TransfersAlreadyApplied => e
-        # 409 Conflict: the request is fine, but it clashes with what the
-        # server already holds.
-        halt 409, json(error: "#{e.message} Send it with apply_again=true to apply it a second time.")
       end
 
       post '/api/reset' do
@@ -71,12 +66,16 @@ module Bank
           JSON.generate(data)
         end
 
-        def apply(csv, apply_again:)
-          Application::ProcessTransfers.new(accounts: settings.accounts, history: settings.history).call(
-            Infrastructure::CsvFiles.transfer_requests(csv),
-            fingerprint: Infrastructure::CsvFiles.fingerprint(csv),
-            apply_again: apply_again
-          )
+        # Sinatra exposes an uploaded file as a Hash with a :tempfile entry.
+        # The "file" field is missing when nothing was sent, and is a plain
+        # String when it was sent as text and not as a file. Both give nil.
+        def uploaded_csv
+          file = params[:file]
+          file[:tempfile]&.read if file.is_a?(Hash)
+        end
+
+        def process(requests)
+          Application::ProcessTransfers.new(accounts: settings.accounts, history: settings.history).call(requests)
         end
 
         # Balances are sent as strings such as "4820.50". A JSON number would

@@ -26,30 +26,19 @@ export type UploadResult = {
   accounts: Account[]
 }
 
-// Thrown when the API answers with an error. `status` is the HTTP status,
-// which the page uses to tell "already applied" (409) from other failures.
-export class ApiError extends Error {
-  status: number
-
-  constructor(message: string, status: number) {
-    super(message)
-    this.status = status
-  }
-}
-
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   let response: Response
   try {
     response = await fetch(path, options)
   } catch {
-    throw new ApiError('Could not reach the server.', 0)
+    throw new Error('Could not reach the server.')
   }
 
   // An error from the API has a JSON body with an `error` message. An error
   // from anything in between (a proxy, for example) may not be JSON at all.
   const body = await response.json().catch(() => null)
   if (!response.ok) {
-    throw new ApiError(body?.error ?? `The server answered with status ${response.status}.`, response.status)
+    throw new Error(body?.error ?? `The server answered with status ${response.status}.`)
   }
   return body as T
 }
@@ -64,12 +53,9 @@ export async function getHistory(): Promise<Transfer[]> {
   return body.transfers
 }
 
-// `applyAgain` confirms that a file the server has seen before should be
-// applied a second time.
-export function postTransfers(file: File, applyAgain = false): Promise<UploadResult> {
+export function postTransfers(file: File): Promise<UploadResult> {
   const form = new FormData()
   form.append('file', file)
-  if (applyAgain) form.append('apply_again', 'true')
   return request<UploadResult>('/api/transfers', { method: 'POST', body: form })
 }
 

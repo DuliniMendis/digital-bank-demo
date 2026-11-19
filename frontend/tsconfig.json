@@ -1,7 +1,25 @@
 {
-  "files": [],
-  "references": [
-    { "path": "./tsconfig.app.json" },
-    { "path": "./tsconfig.node.json" }
-  ]
+  "compilerOptions": {
+    // The code is written for a modern browser and bundled by Vite.
+    "target": "es2023",
+    "lib": ["ES2023", "DOM"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+
+    // "vite/client" describes what Vite adds to the page, such as importing
+    // a CSS file. "node" is for vite.config.ts, which runs in Node.
+    "types": ["vite/client", "node"],
+
+    // TypeScript only checks the code. Vite produces the JavaScript.
+    "noEmit": true,
+    "skipLibCheck": true,
+    "verbatimModuleSyntax": true,
+
+    // Extra checks.
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["src", "vite.config.ts"]
 }

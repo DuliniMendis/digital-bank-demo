@@ -7,10 +7,8 @@ Sequel.migration do
     create_table(:transfers) do
       primary_key :id
 
-      # Which file the line came from, and when that file was uploaded.
-      # Every line of one file carries the same two values. The fingerprint
-      # is a hash of the file's text, 64 characters long.
-      String :fingerprint, size: 64, null: false, index: true
+      # When the file the line came from was uploaded. Every line of one
+      # file carries the same time.
       column :uploaded_at, :timestamptz, null: false
 
       # The line as it appeared in the file. These are kept as text, and may
