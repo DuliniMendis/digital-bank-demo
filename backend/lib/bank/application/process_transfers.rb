@@ -18,44 +18,27 @@ module Bank
     # was uploaded.
     RecordedTransfer = Data.define(:result, :uploaded_at)
 
-    # Raised when a transfers file that was applied before arrives again,
-    # and the sender has not confirmed that it should be applied twice.
-    class TransfersAlreadyApplied < StandardError; end
-
     # Applies one uploaded transfers file, in the order of its lines, and
     # records every line in the history. A rejected transfer changes no
     # balances and does not stop the transfers after it.
-    #
-    # The file has no transfer IDs, and two identical lines in one file can
-    # be two real payments, so a repeat cannot be recognised line by line.
-    # The whole file is recognised by its fingerprint, a hash of its text. A
-    # file seen before is refused unless `apply_again` is true.
     class ProcessTransfers
       def initialize(accounts:, history:)
         @accounts = accounts
         @history = history
       end
 
-      # Checking for an earlier copy, moving the money and recording the
-      # results all happen inside one database transaction. If anything
-      # fails unexpectedly, none of the file is applied and it can be sent
-      # again.
-      def call(requests, fingerprint:, apply_again: false)
+      # Moving the money and recording the results happen inside one
+      # database transaction. If anything fails unexpectedly, none of the
+      # file is applied and it can be sent again.
+      def call(requests)
         @history.one_upload_at_a_time do
-          refuse_repeat(fingerprint) unless apply_again
           results = requests.map { |request| process(request) }
-          @history.record(fingerprint, results)
+          @history.record(results)
           results
         end
       end
 
       private
-
-      def refuse_repeat(fingerprint)
-        return unless @history.uploaded?(fingerprint)
-
-        raise TransfersAlreadyApplied, 'This transfers file has already been applied.'
-      end
 
       # Every broken business rule raises a Domain::Error, so the single
       # rescue below turns any of them into a rejection.

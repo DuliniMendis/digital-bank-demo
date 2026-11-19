@@ -6,8 +6,7 @@ would take the sending account below $0 is rejected.
 
 This is the `extended` branch. The `main` branch is the simplest version that
 answers the brief and keeps everything in memory. This branch adds a Postgres
-database, a history of every transfer, protection against applying the same
-file twice, and a web page to use it from.
+database, a history of every transfer, and a web page to use it from.
 
 ```
 backend/    Ruby: the business rules, the database and the HTTP API
@@ -16,7 +15,7 @@ frontend/   React: the web page
 
 ## Running it
 
-Requires Ruby 4.0, Node 26 and a running Postgres.
+Requires Ruby 3.3 or newer, Node 26 and a running Postgres.
 
 ### The API
 
@@ -54,12 +53,7 @@ curl -F file=@spec/fixtures/transfers.csv http://localhost:9292/api/transfers
 The response lists each transfer as `completed` or `rejected`, with the line
 number and the reason for a rejection, followed by the balances afterwards.
 
-Posting the same file a second time is refused with a 409, because it would
-pay everyone twice. To apply it again on purpose:
-
-```bash
-curl -F file=@spec/fixtures/transfers.csv -F apply_again=true http://localhost:9292/api/transfers
-```
+Nothing stops the same file being posted twice. It is applied a second time.
 
 The other routes:
 
@@ -151,15 +145,14 @@ There are two application services:
 | Service            | What it does                                                             |
 |--------------------|--------------------------------------------------------------------------|
 | `SeedAccounts`     | Empties the accounts and the history, then stores one account for each line of the balances file. Seeds and reseeds. |
-| `ProcessTransfers` | Refuses a file seen before, applies its transfers in order, completing or rejecting each one, and records them in the history. |
+| `ProcessTransfers` | Applies a file's transfers in order, completing or rejecting each one, and records them in the history. |
 
 A posted transfers file goes through the layers like this:
 
 1. `Interfaces::Api` reads the upload and passes the text to `Infrastructure::CsvFiles`,
-   which splits it into rows and works out the file's fingerprint.
-2. `Application::ProcessTransfers` checks the history for that fingerprint. Then it
-   builds a `Transfer` from each row, finds the two accounts and asks the
-   transfer to apply itself.
+   which splits it into rows.
+2. `Application::ProcessTransfers` builds a `Transfer` from each row, finds the two
+   accounts and asks the transfer to apply itself.
 3. `ProcessTransfers` records every result in the history.
 4. `Interfaces::Api` returns each result, and the balances, as JSON.
 
@@ -190,14 +183,9 @@ server and the seed command both run when they start.
 - **A transfers file is all or nothing if something breaks.** The balance
   changes and the history rows are saved in one database transaction. A
   rejected transfer is not a failure; a lost database connection is.
-- **A repeated file is recognised by its contents.** The file has no transfer
-  IDs, and two identical lines can be two real payments, so repeats cannot be
-  spotted line by line. The SHA-256 hash of the whole file is stored with its
-  history rows, and a file with a hash seen before is refused unless the
-  sender confirms.
 - **One transfers file is processed at a time.** Each upload takes a lock on
-  the `transfers` table, so two uploads cannot both spend the same balance,
-  and two copies of the same file cannot both be treated as new.
+  the `transfers` table and holds it until the file is finished, so a second
+  upload waits for the first and the two cannot both spend the same balance.
 
 ### Frontend
 
