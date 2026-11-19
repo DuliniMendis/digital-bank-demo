@@ -29,8 +29,7 @@ module Bank
       private
 
       # Every broken business rule raises a Domain::Error, so the single
-      # rescue below covers every reason a transfer can be rejected: a bad
-      # account number or amount, an unknown account, or insufficient funds.
+      # rescue below turns any of them into a rejection.
       #
       # Both accounts are looked up before any money moves, so a transfer to
       # an account that does not exist takes nothing from the sender.

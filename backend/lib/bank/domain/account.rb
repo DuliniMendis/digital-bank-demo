@@ -3,8 +3,8 @@
 module Bank
   module Domain
     # An account, identified by its number, with a balance that changes as
-    # money moves in and out. This is the only place that enforces the rule
-    # that a balance cannot go below zero.
+    # money moves in and out. It enforces the rule that a balance cannot go
+    # below zero.
     class Account
       attr_reader :number, :balance
 
