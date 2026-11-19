@@ -12,6 +12,9 @@ module Bank
       attr_reader :number, :balance
 
       def initialize(number:, balance:)
+        raise InvalidAccount, 'number must be an account number' unless number.is_a?(AccountNumber)
+        raise InvalidAccount, 'balance must be money' unless balance.is_a?(Money)
+
         @number = number
         @balance = balance
       end

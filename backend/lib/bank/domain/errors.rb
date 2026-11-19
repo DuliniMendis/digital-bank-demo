@@ -12,6 +12,9 @@ module Bank
     # The account number is not exactly 16 digits.
     class InvalidAccountNumber < Error; end
 
+    # The account was built without a proper account number or balance.
+    class InvalidAccount < Error; end
+
     # A withdrawal would take the account balance below $0.
     class InsufficientFunds < Error; end
 

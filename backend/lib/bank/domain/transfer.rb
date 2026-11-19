@@ -6,9 +6,13 @@ module Bank
     # which account it goes to, and how much.
     #
     # It is a value object. `from` and `to` are AccountNumbers and `amount`
-    # is Money.
+    # is Money. The constructor checks all of this, so a Transfer that
+    # exists is always complete and valid.
     Transfer = Data.define(:from, :to, :amount) do
       def initialize(from:, to:, amount:)
+        raise InvalidTransfer, 'from must be an account number' unless from.is_a?(AccountNumber)
+        raise InvalidTransfer, 'to must be an account number' unless to.is_a?(AccountNumber)
+        raise InvalidTransfer, 'amount must be money' unless amount.is_a?(Money)
         raise InvalidTransfer, 'amount must be greater than zero' if amount.zero?
         raise InvalidTransfer, 'from and to accounts must be different' if from == to
 

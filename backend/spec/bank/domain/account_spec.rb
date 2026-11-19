@@ -17,6 +17,28 @@ RSpec.describe Bank::Domain::Account do
     nil
   end
 
+  describe '.new' do
+    it 'rejects a missing account number' do
+      expect { described_class.new(number: nil, balance: money(1000)) }
+        .to raise_error(Bank::Domain::InvalidAccount, /number must be an account number/)
+    end
+
+    it 'rejects an account number given as plain text' do
+      expect { described_class.new(number: '1111234522226789', balance: money(1000)) }
+        .to raise_error(Bank::Domain::InvalidAccount, /number must be an account number/)
+    end
+
+    it 'rejects a missing balance' do
+      expect { described_class.new(number: number, balance: nil) }
+        .to raise_error(Bank::Domain::InvalidAccount, /balance must be money/)
+    end
+
+    it 'rejects a balance given as a plain number' do
+      expect { described_class.new(number: number, balance: 1000) }
+        .to raise_error(Bank::Domain::InvalidAccount, /balance must be money/)
+    end
+  end
+
   describe '#deposit' do
     it 'increases the balance' do
       account.deposit(money(250))
