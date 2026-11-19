@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
-# This file starts the server. Run it with:
+# The `rackup` command reads this file to start the server:
 #
-#   BALANCES_FILE=spec/fixtures/account_balances.csv bundle exec rackup
+#   BALANCES_FILE=path/to/balances.csv bundle exec rackup
 #
-# It loads the account balances from that file into memory, then serves the
-# API on http://localhost:9292.
+# The balances file is loaded first, so the server never accepts a request
+# without its accounts in place.
 
 require_relative 'lib/bank'
 

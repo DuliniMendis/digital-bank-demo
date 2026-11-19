@@ -2,29 +2,16 @@
 
 module Bank
   module Domain
-    # Every business-rule failure inherits from Error, so calling code can
-    # rescue all of them at once with `rescue Bank::Domain::Error`.
+    # Every error raised by a business rule inherits from this class, so a
+    # caller can catch all of them with a single `rescue Domain::Error`.
     class Error < StandardError; end
 
-    # The text or number given is not a valid amount of money.
     class InvalidMoney < Error; end
-
-    # The account number is not exactly 16 digits.
     class InvalidAccountNumber < Error; end
-
-    # The account was built without a proper account number or balance.
     class InvalidAccount < Error; end
-
-    # An account with this number has already been added.
-    class DuplicateAccount < Error; end
-
-    # No account exists with this number.
-    class UnknownAccount < Error; end
-
-    # A withdrawal would take the account balance below $0.
-    class InsufficientFunds < Error; end
-
-    # The transfer itself makes no sense (zero amount, or same account twice).
     class InvalidTransfer < Error; end
+    class DuplicateAccount < Error; end
+    class UnknownAccount < Error; end
+    class InsufficientFunds < Error; end
   end
 end

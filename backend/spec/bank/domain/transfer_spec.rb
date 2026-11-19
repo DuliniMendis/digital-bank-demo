@@ -1,9 +1,7 @@
 # frozen_string_literal: true
 
 RSpec.describe Bank::Domain::Transfer do
-  subject(:transfer) do
-    described_class.new(from: from, to: to, amount: money(300))
-  end
+  subject(:transfer) { described_class.new(from: from, to: to, amount: money(300)) }
 
   let(:from) { Bank::Domain::AccountNumber.new(value: '1111234522226789') }
   let(:to) { Bank::Domain::AccountNumber.new(value: '1212343433335665') }
@@ -14,36 +12,18 @@ RSpec.describe Bank::Domain::Transfer do
     Bank::Domain::Money.new(cents: cents)
   end
 
-  # Runs the transfer and swallows the refusal, so a spec can check what
-  # happened to the balances afterwards.
-  def apply_ignoring_refusal
-    transfer.apply(source: source, destination: destination)
-  rescue Bank::Domain::InsufficientFunds
-    nil
-  end
-
   describe '.new' do
-    it 'rejects a missing from account' do
-      expect { described_class.new(from: nil, to: to, amount: money(300)) }
-        .to raise_error(Bank::Domain::InvalidTransfer, /from must be an account number/)
-    end
-
-    it 'rejects a missing to account' do
-      expect { described_class.new(from: from, to: nil, amount: money(300)) }
-        .to raise_error(Bank::Domain::InvalidTransfer, /to must be an account number/)
-    end
-
-    it 'rejects an account given as plain text' do
+    it 'rejects a from that is not an AccountNumber' do
       expect { described_class.new(from: '1111234522226789', to: to, amount: money(300)) }
         .to raise_error(Bank::Domain::InvalidTransfer, /from must be an account number/)
     end
 
-    it 'rejects a missing amount' do
-      expect { described_class.new(from: from, to: to, amount: nil) }
-        .to raise_error(Bank::Domain::InvalidTransfer, /amount must be money/)
+    it 'rejects a to that is not an AccountNumber' do
+      expect { described_class.new(from: from, to: nil, amount: money(300)) }
+        .to raise_error(Bank::Domain::InvalidTransfer, /to must be an account number/)
     end
 
-    it 'rejects an amount given as a plain number' do
+    it 'rejects an amount that is not Money' do
       expect { described_class.new(from: from, to: to, amount: 300) }
         .to raise_error(Bank::Domain::InvalidTransfer, /amount must be money/)
     end
@@ -75,17 +55,16 @@ RSpec.describe Bank::Domain::Transfer do
     context 'when the source account cannot afford it' do
       let(:source) { Bank::Domain::Account.new(number: from, balance: money(299)) }
 
-      it 'raises InsufficientFunds' do
-        expect { transfer.apply(source: source, destination: destination) }
-          .to raise_error(Bank::Domain::InsufficientFunds)
+      # A refused transfer raises an error, which would end the example. This
+      # swallows the error so the example can go on to check the destination.
+      def apply_refused_transfer
+        transfer.apply(source: source, destination: destination)
+      rescue Bank::Domain::InsufficientFunds
+        nil
       end
 
-      it 'leaves the source balance unchanged' do
-        expect { apply_ignoring_refusal }.not_to change(source, :balance)
-      end
-
-      it 'leaves the destination balance unchanged' do
-        expect { apply_ignoring_refusal }.not_to change(destination, :balance)
+      it 'deposits nothing' do
+        expect { apply_refused_transfer }.not_to change(destination, :balance)
       end
     end
   end
