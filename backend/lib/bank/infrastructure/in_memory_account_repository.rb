@@ -6,9 +6,9 @@ module Bank
     # talk to a repository and do not care how it stores things.
     #
     # This one keeps accounts in memory, in a Hash keyed by account number.
-    # It lets the use cases run, and be tested, without a database. A
-    # database version with the same three methods arrives in a later
-    # milestone.
+    # It lets the use cases run, and be tested, without a database.
+    # PostgresAccountRepository has the same methods and stores accounts
+    # for real.
     #
     # The rule "an account number can only exist once" lives here, because
     # it is a rule about the whole collection and not about one account.
@@ -30,8 +30,17 @@ module Bank
         end
       end
 
+      # Nothing to do here: `find` hands out the stored object itself, so a
+      # change to its balance is already kept.
+      def save(_account); end
+
       def all
         @accounts.values
+      end
+
+      # There is no database to undo anything, so this only runs the block.
+      def transaction
+        yield
       end
     end
   end
