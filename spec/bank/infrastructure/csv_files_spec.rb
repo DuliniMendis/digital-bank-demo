@@ -8,10 +8,11 @@ RSpec.describe Bank::Infrastructure::CsvFiles do
       expect(rows.first.to_h).to eq(line: 1, number: '1111234522226789', balance: '5000.00')
     end
 
-    it 'keeps a comma inside the balance, so the domain can reject it' do
-      rows = described_class.opening_balances("1111234522226789,5,000.00\n")
+    it 'refuses the file when a balance has a comma in it, naming the line' do
+      text = "1111234522226789,5000.00\n1111234522221234,5,000.00\n"
 
-      expect(rows.first.balance).to eq('5,000.00')
+      expect { described_class.opening_balances(text) }
+        .to raise_error(CSV::MalformedCSVError, 'Expected 2 columns but found 3 in line 2.')
     end
   end
 
@@ -48,10 +49,11 @@ RSpec.describe Bank::Infrastructure::CsvFiles do
       expect(rows.first.amount).to be_nil
     end
 
-    it 'keeps a comma inside the amount, so the domain can reject it' do
-      rows = described_class.transfer_requests("1111234522226789,1212343433335665,1,000.00\n")
+    it 'refuses the file when an amount has a comma in it, naming the line' do
+      text = "1111234522226789,1212343433335665,1,000.00\n"
 
-      expect(rows.first.amount).to eq('1,000.00')
+      expect { described_class.transfer_requests(text) }
+        .to raise_error(CSV::MalformedCSVError, 'Expected 3 columns but found 4 in line 1.')
     end
 
     it 'ignores a byte-order mark at the start of the file' do
