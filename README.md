@@ -209,3 +209,37 @@ built with Vite.
 The page holds no business rules. It never decides whether a transfer is
 allowed or works out a balance: it shows what the API returns. Balances stay
 as text from the database to the screen, so no float ever touches them.
+
+## Deployment
+
+The page and the API are deployed together as one Vercel project, so they
+share one address and every deployment contains matching versions of both.
+
+| File                 | What it does                                                           |
+|----------------------|------------------------------------------------------------------------|
+| `vercel.json`        | Declares the two services, and sends `/api/...` to the backend and everything else to the page. |
+| `backend/Dockerfile` | Builds the Ruby API into a container image.                            |
+
+The backend runs as a container because Vercel's built-in Ruby runtime cannot
+load the Postgres driver. The frontend needs no configuration: Vercel
+recognises a Vite project and builds it.
+
+The database is a free Neon Postgres, added to the project through the Vercel
+Marketplace. That sets `DATABASE_URL` on the project, which is the one setting
+the API needs. The balances file is the sample one in
+`backend/spec/fixtures/`, named in the Dockerfile.
+
+Two things follow from how containers run on Vercel:
+
+- **A container is started when a request arrives and stopped when it has been
+  idle.** Nothing can be kept in the container's memory or on its disk, which
+  is why the accounts and the history are in Postgres.
+- **Every start runs `config.ru`**, so the tables are created on the first
+  start and left alone on later ones.
+
+To deploy by hand, from the repository root:
+
+```bash
+vercel deploy          # a preview
+vercel deploy --prod   # production
+```
