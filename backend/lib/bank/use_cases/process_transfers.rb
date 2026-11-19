@@ -18,7 +18,7 @@ module Bank
     #
     # Each transfer either completes or is rejected with a reason. A
     # rejected transfer changes no balances and does not stop the ones
-    # after it.
+    # after it. Each transfer runs in its own transaction.
     class ProcessTransfers
       def initialize(accounts:)
         @accounts = accounts
@@ -36,12 +36,20 @@ module Bank
       # one rescue turns any of them into a rejection.
       def process(request)
         transfer = build_transfer(request)
-        source = @accounts.find(transfer.from)
-        destination = @accounts.find(transfer.to)
-        transfer.apply(source: source, destination: destination)
+        @accounts.transaction { move_money(transfer) }
         TransferResult.new(request: request, rejection_reason: nil)
       rescue Domain::Error => e
         TransferResult.new(request: request, rejection_reason: e.message)
+      end
+
+      # Runs inside one transaction: both balances are saved, or neither is.
+      # Both accounts are looked up before any money moves.
+      def move_money(transfer)
+        source = @accounts.find(transfer.from)
+        destination = @accounts.find(transfer.to)
+        transfer.apply(source: source, destination: destination)
+        @accounts.save(source)
+        @accounts.save(destination)
       end
 
       def build_transfer(request)

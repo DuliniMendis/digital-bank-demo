@@ -13,14 +13,18 @@ module Bank
     # balances file into an Account and adds it to the repository.
     #
     # The starting balances must be trustworthy, so one bad line stops the
-    # whole load. The error names the line and the reason.
+    # whole load. The error names the line and the reason. The load runs in
+    # one transaction, so with a database either every account is stored or
+    # none is.
     class LoadAccounts
       def initialize(accounts:)
         @accounts = accounts
       end
 
       def call(opening_balances)
-        opening_balances.each { |row| add(row) }
+        @accounts.transaction do
+          opening_balances.each { |row| add(row) }
+        end
       end
 
       private

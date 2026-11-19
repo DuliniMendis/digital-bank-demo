@@ -33,4 +33,15 @@ RSpec.describe Bank::UseCases::LoadAccounts do
     expect { load_accounts.call(rows) }
       .to raise_error(Bank::UseCases::InvalidOpeningBalances, /\Aline 2: .*already exists/)
   end
+
+  context 'with accounts kept in Postgres', :database do
+    let(:accounts) { Bank::Infrastructure::PostgresAccountRepository.new(database) }
+
+    it 'stores no accounts at all when one line is bad' do
+      rows = [row(1, '1111234522226789', '1'), row(2, '12345', '1')]
+
+      expect { load_accounts.call(rows) }
+        .to raise_error(Bank::UseCases::InvalidOpeningBalances).and(not_change { loaded })
+    end
+  end
 end

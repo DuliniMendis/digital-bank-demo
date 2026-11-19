@@ -3,8 +3,10 @@
 # End-to-end check of the original challenge. The two sample files in
 # spec/fixtures go through every layer: CSV reading, loading the accounts
 # and processing the transfers.
-RSpec.describe 'Processing the sample files' do
-  let(:accounts) { Bank::Infrastructure::InMemoryAccountRepository.new }
+#
+# The same checks run twice: once with accounts kept in memory, and once
+# with accounts kept in Postgres.
+RSpec.shared_examples 'the sample files give the expected result' do
   let(:expected_balances) do
     {
       '1111234522226789' => '4820.50',
@@ -47,5 +49,19 @@ RSpec.describe 'Processing the sample files' do
     total = -> { accounts.all.map(&:balance).sum(Bank::Domain::Money.zero) }
 
     expect { process_transfers }.not_to(change { total.call })
+  end
+end
+
+RSpec.describe 'Processing the sample files' do
+  context 'with accounts kept in memory' do
+    let(:accounts) { Bank::Infrastructure::InMemoryAccountRepository.new }
+
+    it_behaves_like 'the sample files give the expected result'
+  end
+
+  context 'with accounts kept in Postgres', :database do
+    let(:accounts) { Bank::Infrastructure::PostgresAccountRepository.new(database) }
+
+    it_behaves_like 'the sample files give the expected result'
   end
 end
