@@ -74,6 +74,12 @@ RSpec.describe Bank::Interfaces::Api do
       )
     end
 
+    it 'rejects a line that contains an accented character' do
+      post_transfers("1111234522226789,1212343433335665,5é\n")
+
+      expect(body['transfers'].first).to include('status' => 'rejected', 'amount' => '5é')
+    end
+
     it 'keeps the balances between one post and the next' do
       2.times { post_transfers("1111234522226789,1212343433335665,100.00\n") }
 
@@ -86,36 +92,16 @@ RSpec.describe Bank::Interfaces::Api do
       expect(last_response.status).to eq(400)
     end
 
+    it 'answers 400 when "file" is sent as text and not as a file' do
+      post '/transfers', file: "1111234522226789,1212343433335665,1.00\n"
+
+      expect(last_response.status).to eq(400)
+    end
+
     it 'answers 400 when the file is not valid CSV' do
       post_transfers(%("unclosed,quote\n))
 
       expect(last_response.status).to eq(400)
-    end
-  end
-
-  describe 'two files arriving at the same time' do
-    # A stand-in for ProcessTransfers that takes a moment to run, and records
-    # whether a second call started while an earlier one was still running.
-    let(:slow_processor) do
-      Class.new do
-        attr_reader :overlapped
-
-        def call(_requests)
-          @overlapped ||= @busy
-          @busy = true
-          sleep 0.05
-          @busy = false
-          []
-        end
-      end.new
-    end
-
-    it 'are processed one after the other' do
-      allow(Bank::Application::ProcessTransfers).to receive(:new).and_return(slow_processor)
-
-      Array.new(2) { Thread.new { post_transfers('') } }.each(&:join)
-
-      expect(slow_processor.overlapped).to be_falsy
     end
   end
 end

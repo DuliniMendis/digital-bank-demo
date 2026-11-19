@@ -34,6 +34,15 @@ module Bank
       def ==(other)
         other.is_a?(Account) && number == other.number
       end
+
+      # Ruby does not use `==` when it compares Hash keys or removes
+      # duplicates with `uniq`. It uses `eql?` and `hash`, so they are
+      # defined from the number as well and all three agree.
+      alias eql? ==
+
+      def hash
+        number.hash
+      end
     end
   end
 end

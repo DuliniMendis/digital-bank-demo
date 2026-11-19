@@ -17,6 +17,8 @@ require_relative 'lib/bank'
 sample_balances = File.expand_path('spec/fixtures/account_balances.csv', __dir__)
 balances_file = ENV.fetch('BALANCES_FILE', sample_balances)
 
+abort "BALANCES_FILE is #{balances_file}, which is not a file." unless File.file?(balances_file)
+
 Bank::Interfaces::Api.load_balances(balances_file)
 puts "Loaded account balances from #{balances_file}"
 
