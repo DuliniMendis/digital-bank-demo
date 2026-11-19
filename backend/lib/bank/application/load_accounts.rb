@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Bank
-  module UseCases
+  module Application
     # One line of the balances file: its line number and the two fields as
     # plain text. Nothing has been validated at this point.
     OpeningBalance = Data.define(:line, :number, :balance)

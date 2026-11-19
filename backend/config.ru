@@ -19,7 +19,7 @@ balances_file = ENV.fetch('BALANCES_FILE', sample_balances)
 
 abort "BALANCES_FILE is #{balances_file}, which is not a file." unless File.file?(balances_file)
 
-Bank::Web::Api.load_balances(balances_file)
+Bank::Interfaces::Api.load_balances(balances_file)
 puts "Loaded account balances from #{balances_file}"
 
-run Bank::Web::Api
+run Bank::Interfaces::Api
