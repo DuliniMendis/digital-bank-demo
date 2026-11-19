@@ -4,9 +4,6 @@ require 'csv'
 
 module Bank
   module Infrastructure
-    # The file is not readable as CSV at all (for example an unclosed quote).
-    class UnreadableCsv < StandardError; end
-
     # CsvFiles is the only code that knows the input arrives as CSV.
     #
     # It splits the text into lines and columns and hands each line to the
@@ -34,8 +31,6 @@ module Bank
         lines = CSV.parse(text, skip_blanks: false)
         numbered = lines.each_with_index.map { |fields, index| [index + 1, fields] }
         numbered.reject { |_line, fields| fields.compact.empty? }
-      rescue CSV::MalformedCSVError => e
-        raise UnreadableCsv, e.message
       end
       private_class_method :rows
     end

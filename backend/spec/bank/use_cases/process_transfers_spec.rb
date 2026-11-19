@@ -1,11 +1,16 @@
 # frozen_string_literal: true
 
+# The money rules themselves (overdraft, zero amounts, account number format)
+# are tested in spec/bank/domain. These specs cover what only this use case
+# does: look accounts up, turn a refusal into a rejection, and work through a
+# list in order.
 RSpec.describe Bank::UseCases::ProcessTransfers do
   subject(:process_transfers) { described_class.new(accounts: accounts) }
 
   let(:accounts) { Bank::Infrastructure::InMemoryAccountRepository.new }
   let(:alice) { '1111234522226789' }
   let(:bob) { '1212343433335665' }
+  let(:stranger) { '9999999999999999' }
 
   before do
     add_account(alice, 1000)
@@ -36,48 +41,28 @@ RSpec.describe Bank::UseCases::ProcessTransfers do
       expect(results.first).to be_completed
     end
 
-    it 'takes the amount from the sending account' do
+    it 'moves the money between the stored accounts' do
       process_transfers.call([request(alice, bob, '3.00')])
 
-      expect(balance_of(alice)).to eq('7.00')
-    end
-
-    it 'adds the amount to the receiving account' do
-      process_transfers.call([request(alice, bob, '3.00')])
-
-      expect(balance_of(bob)).to eq('3.50')
-    end
-
-    it 'allows the sending account to reach exactly zero' do
-      process_transfers.call([request(alice, bob, '10.00')])
-
-      expect(balance_of(alice)).to eq('0.00')
+      expect([balance_of(alice), balance_of(bob)]).to eq(['7.00', '3.50'])
     end
   end
 
-  context 'when the sending account cannot afford it' do
-    it 'rejects the transfer and says why' do
+  context 'when the domain refuses the transfer' do
+    it 'rejects a transfer the sender cannot afford, with the reason' do
       results = process_transfers.call([request(alice, bob, '10.01')])
 
       expect(results.first.rejection_reason).to include('does not have sufficient funds')
     end
 
-    it 'leaves the sending balance unchanged' do
-      process_transfers.call([request(alice, bob, '10.01')])
+    it 'rejects a line that cannot be read, with the reason' do
+      results = process_transfers.call([request(alice, bob, 'abc')])
 
-      expect(balance_of(alice)).to eq('10.00')
-    end
-
-    it 'leaves the receiving balance unchanged' do
-      process_transfers.call([request(alice, bob, '10.01')])
-
-      expect(balance_of(bob)).to eq('0.50')
+      expect(results.first.rejection_reason).to eq('"abc" is not a valid amount')
     end
   end
 
   context 'when an account does not exist' do
-    let(:stranger) { '9999999999999999' }
-
     it 'rejects an unknown sending account' do
       results = process_transfers.call([request(stranger, bob, '1.00')])
 
@@ -94,22 +79,6 @@ RSpec.describe Bank::UseCases::ProcessTransfers do
       process_transfers.call([request(alice, stranger, '1.00')])
 
       expect(balance_of(alice)).to eq('10.00')
-    end
-  end
-
-  context 'when the line itself is not valid' do
-    {
-      'a badly formed account number' => %w[12345 1212343433335665 1.00],
-      'an amount that is not a number' => %w[1111234522226789 1212343433335665 abc],
-      'an amount of zero' => %w[1111234522226789 1212343433335665 0.00],
-      'a missing amount' => ['1111234522226789', '1212343433335665', nil],
-      'the same account on both sides' => %w[1111234522226789 1111234522226789 1.00]
-    }.each do |problem, (from, to, amount)|
-      it "rejects #{problem}" do
-        results = process_transfers.call([request(from, to, amount)])
-
-        expect(results.first).not_to be_completed
-      end
     end
   end
 

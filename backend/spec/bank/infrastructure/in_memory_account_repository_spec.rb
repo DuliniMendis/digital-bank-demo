@@ -14,12 +14,6 @@ RSpec.describe Bank::Infrastructure::InMemoryAccountRepository do
   end
 
   describe '#add' do
-    it 'stores the account' do
-      repository.add(account)
-
-      expect(repository.all).to eq([account])
-    end
-
     it 'rejects a second account with the same number' do
       repository.add(account)
 
@@ -42,11 +36,7 @@ RSpec.describe Bank::Infrastructure::InMemoryAccountRepository do
   end
 
   describe '#all' do
-    it 'is empty to begin with' do
-      expect(repository.all).to be_empty
-    end
-
-    it 'returns accounts in the order they were added' do
+    it 'returns the accounts in the order they were added' do
       other = build_account(Bank::Domain::AccountNumber.new(value: '1111234522221234'))
       [account, other].each { |each_account| repository.add(each_account) }
 

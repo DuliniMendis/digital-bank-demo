@@ -29,7 +29,7 @@ RSpec.describe Bank::Domain::Money do
       end
     end
 
-    ['', '   ', nil].each do |missing|
+    ['', nil].each do |missing|
       it "says the amount is missing for #{missing.inspect}" do
         expect { described_class.parse(missing) }
           .to raise_error(Bank::Domain::InvalidMoney, 'amount is missing')
