@@ -4,43 +4,61 @@ A small banking service. It loads account balances for one company from a CSV
 file, then applies a day's transfers from a second CSV file. A transfer that
 would take the sending account below $0 is rejected.
 
+This is the `extended` branch. The `main` branch is the simplest version that
+answers the brief and keeps everything in memory. This branch adds a Postgres
+database, a history of every transfer, and protection against applying the
+same file twice.
+
 ## Running it
 
-Requires Ruby 4.0.
+Requires Ruby 4.0 and a running Postgres.
 
-Start the server with a balances file:
+Create an empty database once, then start the server with it and a balances
+file:
 
 ```bash
 cd backend
 bundle install
+createdb bank_development
+DATABASE_URL=postgres://localhost/bank_development \
 BALANCES_FILE=spec/fixtures/account_balances.csv bundle exec rackup
 ```
 
-The balances are loaded into memory and the server listens on
-`http://localhost:9292`. A bad line in the balances file stops the server from
-starting, and the error names the line.
+The server creates its tables, loads the balances and listens on
+`http://localhost:9292`. The balances file is only loaded when the database
+has no accounts yet. A bad line in it stops the server from starting, and the
+error names the line.
 
 From a second terminal, in `backend/`, post a day's transfers:
 
 ```bash
-curl -F file=@spec/fixtures/transfers.csv http://localhost:9292/transfers
+curl -F file=@spec/fixtures/transfers.csv http://localhost:9292/api/transfers
 ```
 
 The response lists each transfer as `completed` or `rejected`, with the line
 number and the reason for a rejection, followed by the balances afterwards.
 
-To see the balances at any time:
+Posting the same file a second time is refused with a 409, because it would
+pay everyone twice. To apply it again on purpose:
 
 ```bash
-curl http://localhost:9292/accounts
+curl -F file=@spec/fixtures/transfers.csv -F apply_again=true http://localhost:9292/api/transfers
+```
+
+The other routes:
+
+```bash
+curl http://localhost:9292/api/accounts           # the current balances
+curl http://localhost:9292/api/transfers          # every transfer so far, newest file first
+curl -X POST http://localhost:9292/api/reset      # back to the balances file, with no history
 ```
 
 Neither CSV file has a header row. A balances line is `account number,balance`
 and a transfers line is `from,to,amount`. Sample files are in
 `backend/spec/fixtures/`.
 
-Balances carry over from one post to the next, and reset when the server
-restarts.
+Balances and history are kept in the database, so they are still there after
+the server restarts.
 
 ## Running the tests
 
@@ -68,32 +86,55 @@ bundle exec rspec --tag '~database'
 The code is in `backend/lib/bank/` and follows Domain-Driven Design. It has
 four layers, and each one only depends on the ones above it in this table.
 
-| Layer             | What it does                                                                |
-|-------------------|-----------------------------------------------------------------------------|
-| `domain/`         | The business rules: `Money`, `AccountNumber`, `Account` and `Transfer`.     |
-| `use_cases/`      | `LoadAccounts` and `ProcessTransfers`, which put the domain objects to work.|
-| `infrastructure/` | Reads the CSV files, and stores the accounts (in memory or in Postgres).    |
-| `web/`            | The HTTP API. It calls the use cases and returns JSON.                      |
+| Layer             | What it does                                                                  |
+|-------------------|-------------------------------------------------------------------------------|
+| `domain/`         | The business rules: `Money`, `AccountNumber`, `Account` and `Transfer`.       |
+| `use_cases/`      | The operations the app performs, built from the domain objects.               |
+| `infrastructure/` | Reads the CSV files, and stores the accounts and the history in Postgres.     |
+| `web/`            | The HTTP API. It calls the use cases and returns JSON.                        |
 
-The domain layer is plain Ruby with no knowledge of files or HTTP, so the
-rules can be read and tested on their own.
+The domain layer is plain Ruby with no knowledge of files, the database or
+HTTP, so the rules can be read and tested on their own.
+
+There are four use cases:
+
+| Use case             | What it does                                                             |
+|----------------------|--------------------------------------------------------------------------|
+| `LoadAccounts`       | Creates an account for each line of the balances file.                   |
+| `ProcessTransfers`   | Applies a list of transfers in order, completing or rejecting each one.  |
+| `ApplyTransfersFile` | Refuses a file seen before, runs `ProcessTransfers`, records the history.|
+| `Reset`              | Empties the history and loads the opening balances again.                |
 
 A posted transfers file goes through the layers like this:
 
 1. `Web::Api` reads the upload and passes the text to `Infrastructure::CsvFiles`,
-   which splits it into rows.
-2. `UseCases::ProcessTransfers` builds a `Transfer` from each row, finds the two
-   accounts and asks the transfer to apply itself.
-3. `Web::Api` returns each result, and the balances, as JSON.
+   which splits it into rows and works out the file's fingerprint.
+2. `UseCases::ApplyTransfersFile` checks the history for that fingerprint, then
+   hands the rows to `UseCases::ProcessTransfers`.
+3. `ProcessTransfers` builds a `Transfer` from each row, finds the two accounts
+   and asks the transfer to apply itself.
+4. `ApplyTransfersFile` records every result in the history.
+5. `Web::Api` returns each result, and the balances, as JSON.
 
-The use cases are handed a *repository*, an object that adds, finds and saves
-accounts. There are two with the same methods: `InMemoryAccountRepository`
-keeps them in a Hash, and `PostgresAccountRepository` keeps them in the
-`accounts` table. One shared set of specs
-(`spec/support/account_repository_examples.rb`) runs against both. The server
-still uses the in-memory one.
+### Storage
 
-A few decisions shape the code:
+The use cases never talk to the database directly. They are handed two
+objects from `infrastructure/`:
+
+| Object                      | Table       | What it keeps                                         |
+|-----------------------------|-------------|-------------------------------------------------------|
+| `PostgresAccountRepository` | `accounts`  | Each account number and its balance in whole cents.   |
+| `PostgresTransferHistory`   | `transfers` | One row per line of every uploaded transfers file.    |
+
+`InMemoryAccountRepository` has the same methods as the Postgres one and keeps
+accounts in a Hash. The specs for the use cases use it where no database is
+needed, and one shared set of specs
+(`spec/support/account_repository_examples.rb`) runs against both.
+
+The tables are created by the files in `backend/db/migrations/`, which the
+server runs when it starts.
+
+### Decisions that shape the code
 
 - **Money is whole cents.** Floats cannot represent every cent exactly, so
   amounts are integers and `"25.60"` is parsed straight to `2560`.
@@ -104,8 +145,14 @@ A few decisions shape the code:
 - **A bad balances file stops everything; a bad transfer does not.** The
   starting balances have to be trustworthy. A bad transfer line is one
   rejected transfer.
-- **A transfer is all or nothing.** Each one runs in its own database
-  transaction, so both balances are saved or neither is. Loading a balances
-  file works the same way.
-- **One transfers file is processed at a time**, so two uploads cannot both
-  spend the same balance.
+- **A transfers file is all or nothing if something breaks.** The balance
+  changes and the history rows are saved in one database transaction. A
+  rejected transfer is not a failure; a lost database connection is.
+- **A repeated file is recognised by its contents.** The file has no transfer
+  IDs, and two identical lines can be two real payments, so repeats cannot be
+  spotted line by line. The SHA-256 hash of the whole file is stored with its
+  history rows, and a file with a hash seen before is refused unless the
+  sender confirms.
+- **One transfers file is processed at a time.** Each upload takes a lock on
+  the `transfers` table, so two uploads cannot both spend the same balance,
+  and two copies of the same file cannot both be treated as new.
