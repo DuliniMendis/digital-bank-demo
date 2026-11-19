@@ -2,24 +2,23 @@
 
 # The `rackup` command reads this file to start the server:
 #
-#   DATABASE_URL=postgres://localhost/bank_development \
-#   BALANCES_FILE=path/to/balances.csv bundle exec rackup
+#   DATABASE_URL=postgres://localhost/bank_development bundle exec rackup
 #
-# The tables are created and the balances are in place before the server
-# accepts its first request.
+# The server creates its tables if they are missing, but it does not load
+# any balances when it starts. Those are put in the database by seeding it.
+#
+# The balances file is only read when a reset is asked for. With nothing
+# else given it is the sample balances. To use a different file, name it in
+# BALANCES_FILE.
 
 require_relative 'lib/bank'
 
-database_url = ENV.fetch('DATABASE_URL') do
-  abort 'Set DATABASE_URL to the address of the Postgres database.'
-end
+sample_balances = File.expand_path('spec/fixtures/account_balances.csv', __dir__)
+balances_file = ENV.fetch('BALANCES_FILE', sample_balances)
 
-balances_file = ENV.fetch('BALANCES_FILE') do
-  abort 'Set BALANCES_FILE to the path of the account balances CSV file.'
-end
-
-database = Bank::Infrastructure::Database.connect(database_url)
-Bank::Infrastructure::Database.migrate(database)
-Bank::Web::Api.start(database: database, balances_file: balances_file)
+Bank::Web::Api.start(
+  database: Bank::Infrastructure::Database.from_environment,
+  balances_file: balances_file
+)
 
 run Bank::Web::Api

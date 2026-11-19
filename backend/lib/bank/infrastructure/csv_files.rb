@@ -5,9 +5,9 @@ require 'digest'
 
 module Bank
   module Infrastructure
-    # Reads the two CSV files. Neither file has a header row, and blank lines
-    # are skipped. The fields are passed on as plain text, because checking
-    # that they are valid is the job of the domain.
+    # Reads the two CSV files. A header row is optional, and blank lines are
+    # skipped. The fields are passed on as plain text, because checking that
+    # they are valid is the job of the domain.
     module CsvFiles
       # Each line of the balances file is: account number, balance.
       def self.opening_balances(text)
@@ -30,17 +30,28 @@ module Bank
         Digest::SHA256.hexdigest(text)
       end
 
-      # Returns [line number, fields] for every line that is not blank.
+      # Returns [line number, fields] for every line of data.
       #
-      # Blank lines are kept while the lines are numbered (`skip_blanks:
-      # false`) and only dropped afterwards. That way the numbers match the
-      # original file, and an error message can point at the right line.
+      # Blank lines and a header are kept while the lines are numbered
+      # (`skip_blanks: false`) and only dropped afterwards. That way the
+      # numbers match the original file, and an error message can point at
+      # the right line.
       def self.rows(text)
         lines = CSV.parse(text, skip_blanks: false)
         numbered = lines.each_with_index.map { |fields, index| [index + 1, fields] }
-        numbered.reject { |_line, fields| fields.compact.empty? }
+        rows = numbered.reject { |_line, fields| fields.compact.empty? }
+        header?(rows.first) ? rows.drop(1) : rows
       end
-      private_class_method :rows
+
+      # Every line of data starts with an account number, so a first line
+      # that starts with a word and has no digits in it is taken to be a
+      # header. A mistyped account number still has digits in it, so it is
+      # kept and reported as a bad line instead of being quietly skipped.
+      def self.header?(row)
+        first_field = row&.last&.first.to_s.strip
+        !first_field.empty? && !first_field.match?(/\d/)
+      end
+      private_class_method :rows, :header?
     end
   end
 end

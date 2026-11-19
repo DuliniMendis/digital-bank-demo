@@ -27,14 +27,13 @@ RUN bundle install
 COPY . .
 
 # APP_ENV and RACK_ENV switch Sinatra and the server out of development
-# mode. BALANCES_FILE is the sample balances file from the brief. PORT is
-# 80 because that is where Vercel sends a container's requests.
+# mode. PORT is 80 because that is where Vercel sends a container's
+# requests.
 #
 # DATABASE_URL is not set here. It holds a password, so it comes from the
 # project's environment variables on Vercel.
 ENV APP_ENV=production \
     RACK_ENV=production \
-    BALANCES_FILE=spec/fixtures/account_balances.csv \
     PORT=80
 
 # `--host 0.0.0.0` makes the server accept requests from outside the

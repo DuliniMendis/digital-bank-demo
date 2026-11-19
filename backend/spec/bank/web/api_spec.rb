@@ -11,12 +11,11 @@ RSpec.describe Bank::Web::Api, :database do
     described_class
   end
 
-  # Every example begins with an empty database, so starting the app loads
-  # the balances file, as it does the first time the server is started.
-  before { start_app }
-
-  def start_app
+  # Every example begins with an empty database, so each one seeds it with
+  # the sample balances first.
+  before do
     described_class.start(database: database, balances_file: fixture_path('account_balances.csv'))
+    described_class.reseed
   end
 
   def fixture_path(name)
@@ -47,7 +46,7 @@ RSpec.describe Bank::Web::Api, :database do
   let(:pay_one_hundred) { "1111234522226789,1212343433335665,100.00\n" }
 
   describe 'GET /api/accounts' do
-    it 'lists the balances loaded at startup' do
+    it 'lists the balances the database was seeded with' do
       get '/api/accounts'
 
       expect(body['accounts'].first).to eq('number' => '1111234522226789', 'balance' => '5000.00')
@@ -159,12 +158,14 @@ RSpec.describe Bank::Web::Api, :database do
     end
   end
 
-  describe 'starting the server again' do
-    it 'keeps the balances the database already holds' do
-      post_transfers(pay_one_hundred)
-      start_app
+  describe 'POST /api/reset on a database that was never seeded' do
+    before do
+      database[:accounts].delete
+      post '/api/reset'
+    end
 
-      expect(balances['1111234522226789']).to eq('4900.00')
+    it 'seeds it from the balances file' do
+      expect(balances['1111234522226789']).to eq('5000.00')
     end
   end
 
