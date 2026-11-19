@@ -18,7 +18,6 @@ module Bank
         @balance += amount
       end
 
-      # Going down to exactly $0 is allowed.
       def withdraw(amount)
         if amount > balance
           raise InsufficientFunds,
