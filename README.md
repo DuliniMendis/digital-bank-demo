@@ -101,10 +101,6 @@ A few decisions shape the code:
   starting balances have to be trustworthy, so loading the entire balances
   file is aborted if one of the balances is wrong. A bad transfer line is one
   rejected transfer, so the other transfer rows are still processed.
-- **A line with too many columns stops the whole file.** An amount typed as
-  `1,000.00` looks like two columns, and nothing in the line says which one
-  was meant. Either file is refused before any line of it is used, with an
-  error that gives the line number.
 
 ## Extensions
 
