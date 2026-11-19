@@ -5,8 +5,8 @@
 RSpec.describe Bank::UseCases::SeedAccounts, :database do
   subject(:seed_accounts) { described_class.new(accounts: accounts, history: history) }
 
-  let(:accounts) { Bank::Infrastructure::PostgresAccountRepository.new(database) }
-  let(:history) { Bank::Infrastructure::PostgresTransferHistory.new(database) }
+  let(:accounts) { Bank::Infrastructure::AccountRepository.new(database) }
+  let(:history) { Bank::Infrastructure::TransferHistory.new(database) }
 
   def row(line, number, balance)
     Bank::UseCases::OpeningBalance.new(line: line, number: number, balance: balance)

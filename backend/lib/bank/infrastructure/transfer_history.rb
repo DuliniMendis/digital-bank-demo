@@ -4,7 +4,7 @@ module Bank
   module Infrastructure
     # Keeps a record of every uploaded transfers file in the `transfers`
     # table: one row per line of the file, with what happened to it.
-    class PostgresTransferHistory
+    class TransferHistory
       def initialize(database)
         @database = database
         @table = database[:transfers]
