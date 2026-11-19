@@ -13,14 +13,10 @@ module Bank
     #
     # The accounts live in memory, so balances carry over from one request to
     # the next and go back to their starting values when the server restarts.
+    #
+    # Nothing here stops two uploads from being processed at the same moment.
+    # The `extended` branch does that with database transactions and locks.
     class Api < Sinatra::Base
-      # Requests can be handled at the same time. Two uploads processed at
-      # the same moment could both spend the same balance, so this lock makes
-      # them run one after the other. Reading the balances takes the lock
-      # too, so a reader never sees money that has left one account and not
-      # yet reached the other.
-      ONE_AT_A_TIME = Mutex.new
-
       # Reads the balances file into memory. Called once, at startup. A bad
       # file raises an error, so the server does not start.
       def self.load_balances(path)
@@ -31,7 +27,7 @@ module Bank
       end
 
       get '/accounts' do
-        json(accounts: ONE_AT_A_TIME.synchronize { accounts_as_json })
+        json(accounts: accounts_as_json)
       end
 
       post '/transfers' do
@@ -39,7 +35,8 @@ module Bank
         halt 400, json(error: 'Send the transfers CSV as a form field called "file".') unless csv
 
         requests = Infrastructure::CsvFiles.transfer_requests(csv)
-        json(ONE_AT_A_TIME.synchronize { process(requests) })
+        results = process(requests)
+        json(transfers: results.map { |result| transfer_as_json(result) }, accounts: accounts_as_json)
       rescue CSV::MalformedCSVError => e
         halt 400, json(error: "The file is not valid CSV: #{e.message}")
       end
@@ -58,13 +55,8 @@ module Bank
           file[:tempfile]&.read if file.is_a?(Hash)
         end
 
-        # Returns the result of each transfer together with the balances.
-        # The caller holds the lock for the whole of this method, so the
-        # balances are the ones this file left behind and cannot include a
-        # later upload.
         def process(requests)
-          results = UseCases::ProcessTransfers.new(accounts: settings.accounts).call(requests)
-          { transfers: results.map { |result| transfer_as_json(result) }, accounts: accounts_as_json }
+          UseCases::ProcessTransfers.new(accounts: settings.accounts).call(requests)
         end
 
         # Balances are sent as strings such as "4820.50". A JSON number would
