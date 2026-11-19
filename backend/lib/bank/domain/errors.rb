@@ -2,7 +2,8 @@
 
 module Bank
   module Domain
-    # Base class, so callers can rescue any broken business rule in one go.
+    # Every error raised by a business rule inherits from this class, so a
+    # caller can catch all of them with a single `rescue Domain::Error`.
     class Error < StandardError; end
 
     class InvalidMoney < Error; end

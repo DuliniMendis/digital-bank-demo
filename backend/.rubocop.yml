@@ -6,6 +6,3 @@ AllCops:
   SuggestExtensions: false
   Exclude:
     - 'vendor/**/*'
-
-Metrics/MethodLength:
-  Max: 10

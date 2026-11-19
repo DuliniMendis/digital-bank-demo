@@ -2,18 +2,21 @@
 
 module Bank
   module UseCases
-    # A line of the transfers file, not yet validated.
+    # One line of the transfers file: its line number and the three fields
+    # as plain text. Nothing has been validated at this point.
     TransferRequest = Data.define(:line, :from, :to, :amount)
 
-    # What happened to a request. rejection_reason is nil if it went through.
+    # The outcome of one request. `rejection_reason` is nil when the transfer
+    # went through, and says why when it did not.
     TransferResult = Data.define(:request, :rejection_reason) do
       def completed?
         rejection_reason.nil?
       end
     end
 
-    # Applies a day's transfers in file order. A rejected transfer changes
-    # nothing and does not stop the ones after it.
+    # Applies a day's transfers in the order they appear in the file. A
+    # rejected transfer changes no balances and does not stop the transfers
+    # after it.
     class ProcessTransfers
       def initialize(accounts:)
         @accounts = accounts
@@ -25,9 +28,12 @@ module Bank
 
       private
 
-      # Every broken business rule raises a Domain::Error, so this one
-      # rescue covers all the reasons a transfer can be rejected. Both
-      # accounts are found before any money moves.
+      # Every broken business rule raises a Domain::Error, so the single
+      # rescue below covers every reason a transfer can be rejected: a bad
+      # account number or amount, an unknown account, or insufficient funds.
+      #
+      # Both accounts are looked up before any money moves, so a transfer to
+      # an account that does not exist takes nothing from the sender.
       def process(request)
         transfer = build_transfer(request)
         source = @accounts.find(transfer.from)

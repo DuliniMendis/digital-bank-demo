@@ -2,7 +2,9 @@
 
 module Bank
   module Domain
-    # An account number and its balance. The no-overdraft rule lives here.
+    # An account, identified by its number, with a balance that changes as
+    # money moves in and out. This is the only place that enforces the rule
+    # that a balance cannot go below zero.
     class Account
       attr_reader :number, :balance
 

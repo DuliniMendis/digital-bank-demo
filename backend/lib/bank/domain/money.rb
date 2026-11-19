@@ -4,9 +4,9 @@ module Bank
   module Domain
     # An amount of money, held as whole cents.
     Money = Data.define(:cents) do
-      # Parses "25.60", "500" or "5.2" (read as $5.20). More than two decimal
-      # places is rejected instead of rounded, because rounding would quietly
-      # change the amount.
+      # Builds Money from text such as "25.60", "500" or "5.2", which is read
+      # as $5.20. Text with more than two decimal places is rejected rather
+      # than rounded, because rounding would silently change the amount.
       def self.parse(text)
         cleaned = text.to_s.strip
         raise InvalidMoney, 'amount is missing' if cleaned.empty?
@@ -34,6 +34,9 @@ module Bank
         with(cents: cents + other.cents)
       end
 
+      # `with` builds a new Money, which runs the check in `initialize` again.
+      # That is why subtracting a larger amount raises InvalidMoney instead of
+      # returning a negative amount.
       def -(other)
         with(cents: cents - other.cents)
       end

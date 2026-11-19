@@ -55,7 +55,8 @@ RSpec.describe Bank::Domain::Transfer do
     context 'when the source account cannot afford it' do
       let(:source) { Bank::Domain::Account.new(number: from, balance: money(299)) }
 
-      # Lets the spec look at the destination after the transfer was refused.
+      # A refused transfer raises an error, which would end the example. This
+      # swallows the error so the example can go on to check the destination.
       def apply_refused_transfer
         transfer.apply(source: source, destination: destination)
       rescue Bank::Domain::InsufficientFunds

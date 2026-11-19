@@ -1,11 +1,13 @@
 # frozen_string_literal: true
 
-# Four layers. Each one only depends on the ones listed above it.
+# The code is organised into four layers. A layer may use the layers listed
+# above it but never the ones below, so the business rules in `domain` do not
+# depend on CSV files or on HTTP.
 #
-#   domain          business rules
-#   use_cases       what the app does with them
-#   infrastructure  CSV parsing and in-memory storage
-#   web             HTTP API
+#   domain          the business rules
+#   use_cases       the operations the app performs, built from the domain
+#   infrastructure  reading CSV files, and holding the accounts in memory
+#   web             the HTTP API
 module Bank
 end
 

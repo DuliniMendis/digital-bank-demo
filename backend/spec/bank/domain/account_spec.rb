@@ -43,7 +43,8 @@ RSpec.describe Bank::Domain::Account do
     end
 
     context 'when the amount is more than the balance' do
-      # Lets a spec look at the balance after the withdrawal was refused.
+      # A refused withdrawal raises an error, which would end the example.
+      # This swallows the error so the example can go on to check the balance.
       def withdraw_too_much
         account.withdraw(money(1001))
       rescue Bank::Domain::InsufficientFunds

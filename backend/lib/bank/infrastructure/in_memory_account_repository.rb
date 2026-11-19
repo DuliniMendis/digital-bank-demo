@@ -2,8 +2,11 @@
 
 module Bank
   module Infrastructure
-    # Holds the accounts in a Hash for as long as the process runs. Also the
-    # place where a duplicate account number is caught.
+    # Keeps the accounts in a Hash, keyed by account number, for as long as
+    # the process runs. Nothing is written to disk.
+    #
+    # A duplicate account number is caught here and not in Account, because
+    # being unique is a rule about the whole collection of accounts.
     class InMemoryAccountRepository
       def initialize
         @accounts = {}

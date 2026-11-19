@@ -6,18 +6,21 @@ require 'stringio'
 RSpec.describe Bank::Web::Api do
   include Rack::Test::Methods
 
+  # Rack::Test sends its requests to whatever `app` returns.
   def app
     described_class
   end
 
-  # Each example starts from the sample balances, like a fresh server.
+  # Loading the balances again before each example gives every example the
+  # same starting point, as if the server had just been started.
   before { described_class.load_balances(fixture_path('account_balances.csv')) }
 
   def fixture_path(name)
     File.expand_path("../../fixtures/#{name}", __dir__)
   end
 
-  # Same as `curl -F file=@transfers.csv`.
+  # Uploads the CSV text as a file in a form field called "file", the same
+  # way `curl -F file=@transfers.csv` does.
   def post_transfers(csv_text)
     file = Rack::Test::UploadedFile.new(StringIO.new(csv_text), 'text/csv', original_filename: 'transfers.csv')
     post '/transfers', file: file
@@ -91,7 +94,8 @@ RSpec.describe Bank::Web::Api do
   end
 
   describe 'two files arriving at the same time' do
-    # Stands in for ProcessTransfers and notices if two calls overlap.
+    # A stand-in for ProcessTransfers that takes a moment to run, and records
+    # whether a second call started while an earlier one was still running.
     let(:slow_processor) do
       Class.new do
         attr_reader :overlapped

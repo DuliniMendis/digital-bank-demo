@@ -4,7 +4,12 @@ source 'https://rubygems.org'
 
 ruby file: '.ruby-version'
 
-gem 'csv' # no longer ships with Ruby as of 3.4
+# CSV parsing used to be part of Ruby itself. Since Ruby 3.4 it is a
+# separate gem that has to be listed here.
+gem 'csv'
+
+# Sinatra is the web framework, Puma is the server it runs on, and rackup
+# provides the command that starts it.
 gem 'puma'
 gem 'rackup'
 gem 'sinatra'
