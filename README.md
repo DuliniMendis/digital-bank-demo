@@ -6,7 +6,7 @@ would take the sending account below $0 is rejected.
 
 ## Running it
 
-Requires Ruby 4.0.
+Requires Ruby 3.3 or newer.
 
 Start the server with a balances file:
 
