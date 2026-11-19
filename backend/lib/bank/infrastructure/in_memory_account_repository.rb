@@ -3,8 +3,7 @@
 module Bank
   module Infrastructure
     # Keeps the accounts in a Hash, keyed by account number, for as long as
-    # the process runs. Nothing is written to disk. It has the same methods as
-    # PostgresAccountRepository, so the use cases work with either one.
+    # the process runs. Nothing is written to disk.
     #
     # A duplicate account number is caught here, because being unique is a
     # rule about the whole collection of accounts and not about any one of

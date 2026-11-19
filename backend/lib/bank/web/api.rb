@@ -62,7 +62,7 @@ module Bank
         json(accounts: accounts_as_json)
       end
 
-      # Without this, an unknown address gets Sinatra's HTML error page.
+      # An unknown address gets a JSON error, like every other failure.
       not_found do
         json(error: 'There is nothing at this address.')
       end
@@ -97,8 +97,8 @@ module Bank
           )
         end
 
-        # `iso8601` writes the time in the standard form that JavaScript's
-        # `new Date(...)` reads, for example "2026-11-19T14:02:11+11:00".
+        # The upload time is sent in ISO 8601 form, for example
+        # "2026-11-19T14:02:11+11:00".
         def recorded_transfer_as_json(recorded)
           transfer_as_json(recorded.result).merge(uploaded_at: recorded.uploaded_at.iso8601)
         end
