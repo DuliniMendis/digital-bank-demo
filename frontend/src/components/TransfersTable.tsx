@@ -1,4 +1,4 @@
-import type { Transfer } from '../api'
+import type { Transfer } from '../lib/api'
 
 export function TransfersTable({ transfers }: { transfers: Transfer[] }) {
   return (

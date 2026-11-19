@@ -1,5 +1,5 @@
-import type { Account } from '../api'
-import { formatMoney } from '../format'
+import type { Account } from '../lib/api'
+import { formatMoney } from '../lib/format'
 
 export function AccountsTable({ accounts }: { accounts: Account[] }) {
   return (

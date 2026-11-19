@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { getAccounts, postTransfers, resetDemo } from './api'
-import type { Account, Transfer } from './api'
+import { getAccounts, postTransfers, resetDemo } from './lib/api'
+import type { Account, Transfer } from './lib/api'
 import { AccountsSection } from './components/AccountsSection'
 import { PageHeader } from './components/PageHeader'
 import { UploadSection } from './components/UploadSection'
