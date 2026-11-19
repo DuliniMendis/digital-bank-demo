@@ -131,10 +131,10 @@ A posted transfers file goes through the layers like this:
 The use cases never talk to the database directly. They are handed two
 objects from `infrastructure/`:
 
-| Object                      | Table       | What it keeps                                         |
-|-----------------------------|-------------|-------------------------------------------------------|
-| `PostgresAccountRepository` | `accounts`  | Each account number and its balance in whole cents.   |
-| `PostgresTransferHistory`   | `transfers` | One row per line of every uploaded transfers file.    |
+| Object              | Table       | What it keeps                                       |
+|---------------------|-------------|-----------------------------------------------------|
+| `AccountRepository` | `accounts`  | Each account number and its balance in whole cents. |
+| `TransferHistory`   | `transfers` | One row per line of every uploaded transfers file.  |
 
 The tables are created by the files in `backend/db/migrations/`, which the
 server and the seed command both run when they start.

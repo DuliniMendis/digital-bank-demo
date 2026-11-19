@@ -22,8 +22,8 @@ require_relative 'bank/use_cases/seed_accounts'
 require_relative 'bank/use_cases/process_transfers'
 
 require_relative 'bank/infrastructure/database'
-require_relative 'bank/infrastructure/postgres_account_repository'
-require_relative 'bank/infrastructure/postgres_transfer_history'
+require_relative 'bank/infrastructure/account_repository'
+require_relative 'bank/infrastructure/transfer_history'
 require_relative 'bank/infrastructure/csv_files'
 
 require_relative 'bank/web/api'

@@ -20,8 +20,8 @@ module Bank
       # Tells the app which database to use, and which balances file a reset
       # goes back to. Called once, at startup.
       def self.start(database:, balances_file:)
-        set :accounts, Infrastructure::PostgresAccountRepository.new(database)
-        set :history, Infrastructure::PostgresTransferHistory.new(database)
+        set :accounts, Infrastructure::AccountRepository.new(database)
+        set :history, Infrastructure::TransferHistory.new(database)
         set :balances_file, balances_file
       end
 

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe Bank::Infrastructure::PostgresAccountRepository, :database do
+RSpec.describe Bank::Infrastructure::AccountRepository, :database do
   subject(:repository) { described_class.new(database) }
 
   let(:number) { Bank::Domain::AccountNumber.new(value: '1111234522226789') }
