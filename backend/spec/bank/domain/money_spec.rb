@@ -22,10 +22,17 @@ RSpec.describe Bank::Domain::Money do
       expect(described_class.parse(' 12.00 ')).to eq(money(1200))
     end
 
-    ['-5.00', 'abc', '1.234', '1,000.00', '', nil].each do |bad_text|
+    ['-5.00', 'abc', '1.234', '1,000.00'].each do |bad_text|
       it "rejects #{bad_text.inspect}" do
         expect { described_class.parse(bad_text) }
-          .to raise_error(Bank::Domain::InvalidMoney)
+          .to raise_error(Bank::Domain::InvalidMoney, /is not a valid amount/)
+      end
+    end
+
+    ['', '   ', nil].each do |missing|
+      it "says the amount is missing for #{missing.inspect}" do
+        expect { described_class.parse(missing) }
+          .to raise_error(Bank::Domain::InvalidMoney, 'amount is missing')
       end
     end
   end

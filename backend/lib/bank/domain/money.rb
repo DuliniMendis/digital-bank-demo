@@ -26,11 +26,18 @@ module Bank
       # change the amount, so it is safer to refuse.
       def self.parse(text)
         match = /\A(\d+)(?:\.(\d{1,2}))?\z/.match(text.to_s.strip)
-        raise InvalidMoney, "#{text.inspect} is not a valid amount" unless match
+        raise InvalidMoney, why_invalid(text) unless match
 
         dollars = match[1].to_i
         cents = match[2].to_s.ljust(2, '0').to_i
         new(cents: (dollars * 100) + cents)
+      end
+
+      # The error message for text that could not be parsed.
+      def self.why_invalid(text)
+        return 'amount is missing' if text.to_s.strip.empty?
+
+        "#{text.inspect} is not a valid amount"
       end
 
       def self.zero
