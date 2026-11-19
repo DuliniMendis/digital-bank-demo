@@ -11,3 +11,9 @@
 #   web             the HTTP API
 module Bank
 end
+
+require_relative 'bank/domain/errors'
+require_relative 'bank/domain/money'
+require_relative 'bank/domain/account_number'
+require_relative 'bank/domain/account'
+require_relative 'bank/domain/transfer'

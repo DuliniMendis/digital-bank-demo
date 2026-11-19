@@ -1,0 +1,96 @@
+# frozen_string_literal: true
+
+RSpec.describe Bank::Domain::Account do
+  subject(:account) { described_class.new(number: number, balance: money(1000)) }
+
+  let(:number) { Bank::Domain::AccountNumber.new(value: '1111234522226789') }
+
+  def money(cents)
+    Bank::Domain::Money.new(cents: cents)
+  end
+
+  # Runs the block and swallows the refusal, so a spec can check what
+  # happened to the balance afterwards.
+  def ignoring_refusal
+    yield
+  rescue Bank::Domain::InsufficientFunds
+    nil
+  end
+
+  describe '.new' do
+    it 'rejects a missing account number' do
+      expect { described_class.new(number: nil, balance: money(1000)) }
+        .to raise_error(Bank::Domain::InvalidAccount, /number must be an account number/)
+    end
+
+    it 'rejects an account number given as plain text' do
+      expect { described_class.new(number: '1111234522226789', balance: money(1000)) }
+        .to raise_error(Bank::Domain::InvalidAccount, /number must be an account number/)
+    end
+
+    it 'rejects a missing balance' do
+      expect { described_class.new(number: number, balance: nil) }
+        .to raise_error(Bank::Domain::InvalidAccount, /balance must be money/)
+    end
+
+    it 'rejects a balance given as a plain number' do
+      expect { described_class.new(number: number, balance: 1000) }
+        .to raise_error(Bank::Domain::InvalidAccount, /balance must be money/)
+    end
+  end
+
+  describe '#deposit' do
+    it 'increases the balance' do
+      account.deposit(money(250))
+
+      expect(account.balance).to eq(money(1250))
+    end
+  end
+
+  describe '#withdraw' do
+    it 'decreases the balance' do
+      account.withdraw(money(400))
+
+      expect(account.balance).to eq(money(600))
+    end
+
+    it 'allows the balance to reach exactly zero' do
+      account.withdraw(money(1000))
+
+      expect(account.balance).to eq(money(0))
+    end
+
+    context 'when the amount is more than the balance' do
+      it 'raises InsufficientFunds' do
+        expect { account.withdraw(money(1001)) }
+          .to raise_error(Bank::Domain::InsufficientFunds)
+      end
+
+      it 'explains which account and how much' do
+        expect { account.withdraw(money(1001)) }.to raise_error(
+          'account 1111234522226789 does not have sufficient funds to withdraw $10.01'
+        )
+      end
+
+      it 'leaves the balance unchanged' do
+        expect { ignoring_refusal { account.withdraw(money(1001)) } }
+          .not_to change(account, :balance)
+      end
+    end
+  end
+
+  describe 'being an entity' do
+    it 'is the same account as another with the same number' do
+      same_number = described_class.new(number: number, balance: money(5))
+
+      expect(account).to eq(same_number)
+    end
+
+    it 'is a different account when the number differs' do
+      other_number = Bank::Domain::AccountNumber.new(value: '1111234522221234')
+      other = described_class.new(number: other_number, balance: money(1000))
+
+      expect(account).not_to eq(other)
+    end
+  end
+end
