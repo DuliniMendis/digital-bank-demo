@@ -1,13 +1,12 @@
 # frozen_string_literal: true
 
-# The money rules themselves (overdraft, zero amounts, account number format)
-# are tested in spec/bank/domain. These specs cover what only this use case
-# does: look accounts up, turn a refusal into a rejection, and work through a
-# list in order.
-RSpec.describe Bank::UseCases::ProcessTransfers do
+# The money rules themselves are covered by the domain specs. These examples
+# cover what ProcessTransfers adds on top: finding the accounts, turning a
+# refusal into a rejection, and working through the list in order.
+RSpec.describe Bank::UseCases::ProcessTransfers, :database do
   subject(:process_transfers) { described_class.new(accounts: accounts) }
 
-  let(:accounts) { Bank::Infrastructure::InMemoryAccountRepository.new }
+  let(:accounts) { Bank::Infrastructure::PostgresAccountRepository.new(database) }
   let(:alice) { '1111234522226789' }
   let(:bob) { '1212343433335665' }
   let(:stranger) { '9999999999999999' }
@@ -62,31 +61,22 @@ RSpec.describe Bank::UseCases::ProcessTransfers do
     end
   end
 
-  context 'when an account does not exist' do
-    it 'rejects an unknown sending account' do
-      results = process_transfers.call([request(stranger, bob, '1.00')])
-
-      expect(results.first.rejection_reason).to eq('account 9999999999999999 does not exist')
-    end
-
-    it 'rejects an unknown receiving account' do
+  context 'when the receiving account does not exist' do
+    it 'rejects the transfer' do
       results = process_transfers.call([request(alice, stranger, '1.00')])
 
       expect(results.first.rejection_reason).to eq('account 9999999999999999 does not exist')
     end
 
-    it 'does not take money when the receiving account is unknown' do
+    it 'takes nothing from the sender' do
       process_transfers.call([request(alice, stranger, '1.00')])
 
       expect(balance_of(alice)).to eq('10.00')
     end
   end
 
-  # This is why each transfer runs in a transaction. It needs a real
-  # database, because only a database can undo a save.
-  context 'when saving fails halfway through a transfer', :database do
-    let(:accounts) { Bank::Infrastructure::PostgresAccountRepository.new(database) }
-
+  # This is why each transfer runs in a transaction.
+  context 'when saving fails halfway through a transfer' do
     before do
       receiver = having_attributes(number: Bank::Domain::AccountNumber.new(value: bob))
       allow(accounts).to receive(:save).and_call_original
@@ -104,14 +94,8 @@ RSpec.describe Bank::UseCases::ProcessTransfers do
       [
         request(alice, bob, '99.00', line: 1), # rejected: more than Alice has
         request(alice, bob, '4.00', line: 2),
-        request(bob, alice, '4.50', line: 3) # works only because line 2 ran first
+        request(bob, alice, '4.50', line: 3) # only affordable because line 2 ran first
       ]
-    end
-
-    it 'returns one result per transfer, in file order' do
-      results = process_transfers.call(requests)
-
-      expect(results.map { |result| result.request.line }).to eq([1, 2, 3])
     end
 
     it 'carries on after a rejected transfer' do

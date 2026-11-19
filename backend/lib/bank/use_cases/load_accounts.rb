@@ -2,20 +2,18 @@
 
 module Bank
   module UseCases
-    # One line of the balances file, exactly as it was read: the line number
-    # and the two pieces of text. Nothing has been checked yet.
+    # One line of the balances file: its line number and the two fields as
+    # plain text. Nothing has been validated at this point.
     OpeningBalance = Data.define(:line, :number, :balance)
 
-    # The balances file could not be loaded. The message says which line.
+    # Raised when a line of the balances file is rejected. The message starts
+    # with the line number.
     class InvalidOpeningBalances < StandardError; end
 
-    # LoadAccounts sets up the starting state: it turns each line of the
-    # balances file into an Account and adds it to the repository.
-    #
-    # The starting balances must be trustworthy, so one bad line stops the
-    # whole load. The error names the line and the reason. The load runs in
-    # one transaction, so with a database either every account is stored or
-    # none is.
+    # Creates an account for each line of the balances file. It stops at the
+    # first bad line, because the transfers should not be run against
+    # starting balances that cannot be trusted. The load runs in one
+    # transaction, so either every account in the file is stored or none is.
     class LoadAccounts
       def initialize(accounts:)
         @accounts = accounts
@@ -29,6 +27,8 @@ module Bank
 
       private
 
+      # A domain error only says what is wrong. Re-raising it with the line
+      # number in front tells the reader where in the file to look.
       def add(row)
         @accounts.add(build_account(row))
       rescue Domain::Error => e

@@ -1,17 +1,17 @@
 # frozen_string_literal: true
 
+# Run Sinatra in test mode. In its default development mode it only accepts
+# requests addressed to this machine, which would turn away the requests
+# made by the specs.
+ENV['APP_ENV'] = 'test'
+
 require 'bank'
 require_relative 'support/database'
-require_relative 'support/account_repository_examples'
 
 # Lets a spec say "and this did not change" after another expectation.
 RSpec::Matchers.define_negated_matcher :not_change, :change
 
 RSpec.configure do |config|
-  config.expect_with :rspec do |expectations|
-    expectations.include_chain_clauses_in_custom_matcher_descriptions = true
-  end
-
   config.mock_with :rspec do |mocks|
     mocks.verify_partial_doubles = true
   end

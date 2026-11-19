@@ -2,38 +2,34 @@
 
 module Bank
   module UseCases
-    # One line of the transfers file, exactly as it was read: the line
-    # number and the three pieces of text. Nothing has been checked yet.
+    # One line of the transfers file: its line number and the three fields
+    # as plain text. Nothing has been validated at this point.
     TransferRequest = Data.define(:line, :from, :to, :amount)
 
-    # What happened to one TransferRequest. `rejection_reason` is nil when
-    # the transfer went through.
+    # The outcome of one request. `rejection_reason` is nil when the transfer
+    # went through, and says why when it did not.
     TransferResult = Data.define(:request, :rejection_reason) do
       def completed?
         rejection_reason.nil?
       end
     end
 
-    # ProcessTransfers applies a day's transfers, in file order.
-    #
-    # Each transfer either completes or is rejected with a reason. A
-    # rejected transfer changes no balances and does not stop the ones
+    # Applies a day's transfers in the order they appear in the file. A
+    # rejected transfer changes no balances and does not stop the transfers
     # after it. Each transfer runs in its own transaction.
     class ProcessTransfers
       def initialize(accounts:)
         @accounts = accounts
       end
 
-      # Returns one TransferResult per request, in the same order.
       def call(requests)
         requests.map { |request| process(request) }
       end
 
       private
 
-      # Every business rule raises a Domain::Error when it is broken (bad
-      # account number, unknown account, insufficient funds and so on), so
-      # one rescue turns any of them into a rejection.
+      # Every broken business rule raises a Domain::Error, so the single
+      # rescue below turns any of them into a rejection.
       def process(request)
         transfer = build_transfer(request)
         @accounts.transaction { move_money(transfer) }
@@ -42,8 +38,10 @@ module Bank
         TransferResult.new(request: request, rejection_reason: e.message)
       end
 
-      # Runs inside one transaction: both balances are saved, or neither is.
-      # Both accounts are looked up before any money moves.
+      # Both accounts are looked up before any money moves, so a transfer to
+      # an account that does not exist takes nothing from the sender. The two
+      # saves happen inside the transaction, so both new balances are kept or
+      # neither is.
       def move_money(transfer)
         source = @accounts.find(transfer.from)
         destination = @accounts.find(transfer.to)

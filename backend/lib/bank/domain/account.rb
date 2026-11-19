@@ -2,12 +2,9 @@
 
 module Bank
   module Domain
-    # Account is a customer's account: an account number and a balance.
-    #
-    # It is an entity: it is identified by its number, and its balance changes
-    # over time. Two Account objects with the same number are the same account.
-    #
-    # The rule "a balance can never go below $0" lives here and nowhere else.
+    # An account, identified by its number, with a balance that changes as
+    # money moves in and out. It enforces the rule that a balance cannot go
+    # below zero.
     class Account
       attr_reader :number, :balance
 
@@ -23,7 +20,6 @@ module Bank
         @balance += amount
       end
 
-      # Takes money out. Taking the balance to exactly $0 is allowed.
       def withdraw(amount)
         if amount > balance
           raise InsufficientFunds,
@@ -33,6 +29,8 @@ module Bank
         @balance -= amount
       end
 
+      # Two accounts are the same account if their numbers match, whatever
+      # their balances.
       def ==(other)
         other.is_a?(Account) && number == other.number
       end
