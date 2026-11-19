@@ -39,10 +39,10 @@ RSpec.describe Bank::Infrastructure::PostgresTransferHistory do
     end
   end
 
-  # This example is not tagged :database. That tag keeps an example on one
-  # connection inside one transaction, and a lock can only be seen at work
-  # between two connections. Each thread below gets a connection of its own.
-  # Nothing is written to the table, so there is nothing to tidy up.
+  # A lock can only be seen at work between two database connections, so
+  # this example is not tagged :database, which would keep it on one. Each
+  # thread below gets a connection of its own. Nothing is written to the
+  # table, so there is nothing to tidy up.
   context 'with two uploads arriving at the same time' do
     let(:database) { DatabaseHelper.database }
     let(:events) { Queue.new }
