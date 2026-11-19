@@ -43,7 +43,6 @@ type Answer = { status: number; body: unknown }
 // to set up its scenario.
 let server: {
   accounts: Answer
-  history: Answer
   upload: Answer
   reset: Answer
 }
@@ -60,8 +59,6 @@ function fakeFetch(path: string | URL | Request, options?: RequestInit): Promise
     answer = server.upload
   } else if (method === 'POST' && path === '/api/reset') {
     answer = server.reset
-  } else if (path === '/api/transfers') {
-    answer = server.history
   } else {
     answer = server.accounts
   }
@@ -72,7 +69,6 @@ function fakeFetch(path: string | URL | Request, options?: RequestInit): Promise
 beforeEach(() => {
   server = {
     accounts: { status: 200, body: { accounts: openingAccounts } },
-    history: { status: 200, body: { transfers: [] } },
     upload: { status: 200, body: { transfers: [], accounts: openingAccounts } },
     reset: { status: 200, body: { accounts: openingAccounts } },
   }
@@ -101,7 +97,6 @@ test('shows the balances when the page opens', async () => {
   render(<App />)
 
   expect(await screen.findByText('$5,000.00')).toBeInTheDocument()
-  expect(screen.getByText('No transfers have been uploaded yet.')).toBeInTheDocument()
 })
 
 test('uploading a file shows each transfer and the new balances', async () => {
@@ -109,13 +104,11 @@ test('uploading a file shows each transfer and the new balances', async () => {
   render(<App />)
   await screen.findByText('$5,000.00')
 
-  // From here on, the history the server returns includes the upload.
-  server.history = { status: 200, body: { transfers: [{ ...completed, uploaded_at: '2026-11-19T14:02:11+11:00' }] } }
   await uploadFile()
 
   expect(await screen.findByText('1 transfer: 1 completed, 0 rejected.')).toBeInTheDocument()
   expect(section('Accounts').getByText('$4,500.00')).toBeInTheDocument()
-  expect(section('History').getByText('Completed')).toBeInTheDocument()
+  expect(screen.getByText('Completed')).toBeInTheDocument()
   expect((uploadsSent[0].get('file') as File).name).toBe('transfers.csv')
 })
 
