@@ -14,28 +14,16 @@ module Bank
       end
     end
 
-    # A TransferResult read back from the history, with the time its file
-    # was uploaded.
-    RecordedTransfer = Data.define(:result, :uploaded_at)
-
-    # Applies one uploaded transfers file, in the order of its lines, and
-    # records every line in the history. A rejected transfer changes no
-    # balances and does not stop the transfers after it.
+    # Applies a day's transfers in the order they appear in the file. A
+    # rejected transfer changes no balances and does not stop the transfers
+    # after it. Each transfer runs in its own transaction.
     class ProcessTransfers
-      def initialize(accounts:, history:)
+      def initialize(accounts:)
         @accounts = accounts
-        @history = history
       end
 
-      # Moving the money and recording the results happen inside one
-      # database transaction. If anything fails unexpectedly, none of the
-      # file is applied and it can be sent again.
       def call(requests)
-        @history.one_upload_at_a_time do
-          results = requests.map { |request| process(request) }
-          @history.record(results)
-          results
-        end
+        requests.map { |request| process(request) }
       end
 
       private
@@ -43,16 +31,17 @@ module Bank
       # Every broken business rule raises a Domain::Error, so the single
       # rescue below turns any of them into a rejection.
       def process(request)
-        move_money(build_transfer(request))
+        transfer = build_transfer(request)
+        @accounts.transaction { move_money(transfer) }
         TransferResult.new(request: request, rejection_reason: nil)
       rescue Domain::Error => e
         TransferResult.new(request: request, rejection_reason: e.message)
       end
 
       # Both accounts are looked up before any money moves, so a transfer to
-      # an account that does not exist takes nothing from the sender. A
-      # refusal is raised before either account is saved, so a rejected
-      # transfer leaves nothing half done.
+      # an account that does not exist takes nothing from the sender. The two
+      # saves happen inside the transaction, so both new balances are kept or
+      # neither is.
       def move_money(transfer)
         source = @accounts.find(transfer.from)
         destination = @accounts.find(transfer.to)
