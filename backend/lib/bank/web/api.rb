@@ -16,12 +16,10 @@ module Bank
     # Accounts and history are kept in Postgres, so they are still there
     # after the server restarts.
     class Api < Sinatra::Base
-      # Called once from config.ru, before the server accepts any request.
-      #
-      # `set` stores a value on the app, and the routes read it back through
-      # `settings`. The balances file is only loaded when the database has
-      # no accounts yet, which is the first start. Later starts keep the
-      # balances the database already holds.
+      # Connects the app to the database. Called once, at startup. The
+      # balances file is only loaded when the database has no accounts yet,
+      # which is the first start. Later starts keep the balances the database
+      # already holds.
       def self.start(database:, balances_file:)
         set :accounts, Infrastructure::PostgresAccountRepository.new(database)
         set :history, Infrastructure::PostgresTransferHistory.new(database)
@@ -29,8 +27,8 @@ module Bank
         reset if accounts.all.empty?
       end
 
-      # A bad balances file raises an error here. On the first start that
-      # stops the server from starting.
+      # Empties the history and loads the balances file again. A bad file
+      # raises an error, so on the first start the server does not start.
       def self.reset
         UseCases::Reset.new(accounts: accounts, history: history).call(opening_balances)
       end
@@ -83,17 +81,15 @@ module Bank
           )
         end
 
-        # Balances are sent as strings such as "4820.50". As JSON numbers
-        # they would be read as floats by most clients, which can be a cent
-        # out.
+        # Balances are sent as strings such as "4820.50". A JSON number would
+        # become a float in most clients, and any sums done with it could
+        # drift by a fraction of a cent.
         def accounts_as_json
           settings.accounts.all.map do |account|
             { number: account.number.to_s, balance: account.balance.to_s }
           end
         end
 
-        # The fields of the original request (line, from, to, amount) plus
-        # what happened to it.
         def transfer_as_json(result)
           result.request.to_h.merge(
             status: result.completed? ? 'completed' : 'rejected',

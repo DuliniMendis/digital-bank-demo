@@ -3,7 +3,8 @@
 export type Account = {
   number: string
   // A string such as "4820.50". The API never sends money as a number,
-  // because JavaScript numbers are floats and can be a cent out.
+  // because a JavaScript number is a float, and any sums done with it could
+  // drift by a fraction of a cent.
   balance: string
 }
 
