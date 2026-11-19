@@ -77,5 +77,11 @@ RSpec.describe Bank::Domain::Account do
 
       expect(account).not_to eq(other)
     end
+
+    it 'counts as one account when duplicates are removed' do
+      same_number = described_class.new(number: number, balance: money(5))
+
+      expect([account, same_number].uniq.size).to eq(1)
+    end
   end
 end

@@ -85,6 +85,12 @@ RSpec.describe Bank::Interfaces::Api, :database do
       )
     end
 
+    it 'rejects a line that contains an accented character' do
+      post_transfers("1111234522226789,1212343433335665,5é\n")
+
+      expect(body['transfers'].first).to include('status' => 'rejected', 'amount' => '5é')
+    end
+
     it 'keeps the balances between one file and the next' do
       post_transfers(pay_one_hundred)
       post_transfers("1111234522226789,1212343433335665,50.00\n")
@@ -94,6 +100,12 @@ RSpec.describe Bank::Interfaces::Api, :database do
 
     it 'answers 400 when no file is sent' do
       post '/api/transfers'
+
+      expect(last_response.status).to eq(400)
+    end
+
+    it 'answers 400 when "file" is sent as text and not as a file' do
+      post '/api/transfers', file: "1111234522226789,1212343433335665,1.00\n"
 
       expect(last_response.status).to eq(400)
     end
