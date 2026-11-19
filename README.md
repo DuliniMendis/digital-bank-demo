@@ -212,6 +212,9 @@ as text from the database to the screen, so no float ever touches them.
 
 ## Deployment
 
+The app is live at <https://digital-bank-demo-flame.vercel.app>. It starts
+from the sample balances, and "Reset to opening balances" puts them back.
+
 The page and the API are deployed together as one Vercel project, so they
 share one address and every deployment contains matching versions of both.
 
