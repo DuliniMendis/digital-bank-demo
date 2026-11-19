@@ -121,6 +121,21 @@ npm test
 npm run lint
 ```
 
+There are also two end-to-end tests, written with Playwright. They open the
+page in a real browser and use it against the real API and a real database,
+to check that the three work together. Playwright starts the API and the page
+itself, on ports of their own, so nothing else needs to be running:
+
+```bash
+cd frontend
+createdb bank_e2e                     # once
+npx playwright install chromium       # once: downloads the browser
+npm run e2e
+```
+
+Every test resets its database, which is why they use `bank_e2e` and not the
+development one. To use a database somewhere else, set `E2E_DATABASE_URL`.
+
 ## Architecture
 
 ### Backend
