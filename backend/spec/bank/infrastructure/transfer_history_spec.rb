@@ -4,10 +4,10 @@ RSpec.describe Bank::Infrastructure::TransferHistory do
   subject(:history) { described_class.new(database) }
 
   def result(line, amount, rejection_reason: nil)
-    request = Bank::UseCases::TransferRequest.new(
+    request = Bank::Application::TransferRequest.new(
       line: line, from: '1111234522226789', to: '1212343433335665', amount: amount
     )
-    Bank::UseCases::TransferResult.new(request: request, rejection_reason: rejection_reason)
+    Bank::Application::TransferResult.new(request: request, rejection_reason: rejection_reason)
   end
 
   context 'with one connection', :database do

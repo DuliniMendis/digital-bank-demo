@@ -2,14 +2,14 @@
 
 # These examples cover what SeedAccounts itself does. What makes an account
 # number or a balance valid is covered by the domain specs.
-RSpec.describe Bank::UseCases::SeedAccounts, :database do
+RSpec.describe Bank::Application::SeedAccounts, :database do
   subject(:seed_accounts) { described_class.new(accounts: accounts, history: history) }
 
   let(:accounts) { Bank::Infrastructure::AccountRepository.new(database) }
   let(:history) { Bank::Infrastructure::TransferHistory.new(database) }
 
   def row(line, number, balance)
-    Bank::UseCases::OpeningBalance.new(line: line, number: number, balance: balance)
+    Bank::Application::OpeningBalance.new(line: line, number: number, balance: balance)
   end
 
   def stored
@@ -24,21 +24,21 @@ RSpec.describe Bank::UseCases::SeedAccounts, :database do
 
   it 'names the line that the domain refuses' do
     expect { seed_accounts.call([row(1, '1111234522226789', '1'), row(2, '12345', '1')]) }
-      .to raise_error(Bank::UseCases::InvalidOpeningBalances, /\Aline 2: .*16 digit/)
+      .to raise_error(Bank::Application::InvalidOpeningBalances, /\Aline 2: .*16 digit/)
   end
 
   it 'names the line that repeats an account number' do
     rows = [row(1, '1111234522226789', '1'), row(2, '1111234522226789', '2')]
 
     expect { seed_accounts.call(rows) }
-      .to raise_error(Bank::UseCases::InvalidOpeningBalances, /\Aline 2: .*already exists/)
+      .to raise_error(Bank::Application::InvalidOpeningBalances, /\Aline 2: .*already exists/)
   end
 
   context 'when the database was seeded and used before' do
     before do
       seed_accounts.call([row(1, '1212343433335665', '7.00')])
-      request = Bank::UseCases::TransferRequest.new(line: 1, from: 'a', to: 'b', amount: '1')
-      history.record('a' * 64, [Bank::UseCases::TransferResult.new(request: request, rejection_reason: 'bad')])
+      request = Bank::Application::TransferRequest.new(line: 1, from: 'a', to: 'b', amount: '1')
+      history.record('a' * 64, [Bank::Application::TransferResult.new(request: request, rejection_reason: 'bad')])
     end
 
     it 'replaces the accounts already stored' do
@@ -57,7 +57,7 @@ RSpec.describe Bank::UseCases::SeedAccounts, :database do
       rows = [row(1, '1111234522226789', '1'), row(2, '12345', '1')]
 
       expect { seed_accounts.call(rows) }
-        .to raise_error(Bank::UseCases::InvalidOpeningBalances)
+        .to raise_error(Bank::Application::InvalidOpeningBalances)
         .and(not_change { [stored, history.all.size] })
     end
   end
