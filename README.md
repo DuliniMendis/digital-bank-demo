@@ -209,3 +209,45 @@ each part of the page:
 The page holds no business rules. It never decides whether a transfer is
 allowed or works out a balance: it shows what the API returns. Balances stay
 as text from the database to the screen, so no float ever touches them.
+
+## Deployment
+
+The app is live at <https://digital-bank-demo-flame.vercel.app>. Its database
+was seeded with the sample balances, and "Reset to opening balances" puts
+them back.
+
+The page and the API are deployed together as one Vercel project, so they
+share one address and every deployment contains matching versions of both.
+
+| File                 | What it does                                                           |
+|----------------------|------------------------------------------------------------------------|
+| `vercel.json`        | Declares the two services, and sends `/api/...` to the backend and everything else to the page. |
+| `backend/Dockerfile` | Builds the Ruby API into a container image.                            |
+
+The backend runs as a container because Vercel's built-in Ruby runtime cannot
+load the Postgres driver. The frontend needs no configuration: Vercel
+recognises a Vite project and builds it.
+
+The database is a free Neon Postgres, added to the project through the Vercel
+Marketplace. That sets `DATABASE_URL` on the project, which is the one setting
+the API needs. With no `BALANCES_FILE` set, a reset loads the sample balances.
+
+A new database is empty. The server creates the tables but loads no balances,
+so the page shows no accounts until the database is seeded. Pressing "Reset to
+opening balances" on the page does that. So does running the seed command
+with `DATABASE_URL` pointing at the hosted database.
+
+Two things follow from how containers run on Vercel:
+
+- **A container is started when a request arrives and stopped when it has been
+  idle.** Nothing can be kept in the container's memory or on its disk, which
+  is why the accounts are in Postgres.
+- **Every start runs `config.ru`**, so the table is created on the first
+  start and left alone on later ones.
+
+To deploy by hand, from the repository root:
+
+```bash
+vercel deploy          # a preview
+vercel deploy --prod   # production
+```

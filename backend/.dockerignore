@@ -1,0 +1,4 @@
+# Left out of the image. The gems are installed inside the container, so the
+# copies installed on this machine are not wanted.
+.bundle/
+vendor/
