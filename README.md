@@ -1,135 +1,94 @@
 # Digital Bank Demo
 
-A very simple banking service. It loads account balances for one company from a
-CSV file, then applies a day's transfers from a second CSV file. A transfer is
-rejected if it would take the sending account below $0.
+A small banking service. It loads account balances for one company from a CSV
+file, then applies a day's transfers from a second CSV file. A transfer that
+would take the sending account below $0 is rejected.
 
-This repository is being built one milestone at a time. Each milestone is one
-pull request.
+## Running it
 
-## The sample files
+Requires Ruby 4.0.
 
-The two sample files from the brief are in `backend/spec/fixtures/`. An
-end-to-end spec (`backend/spec/integration/sample_files_spec.rb`) loads the
-balances, applies the transfers and checks the result:
-
-| Account          | Starting balance | Final balance |
-|------------------|-----------------:|--------------:|
-| 1111234522226789 |          5000.00 |       4820.50 |
-| 1111234522221234 |         10000.00 |       9974.40 |
-| 2222123433331212 |           550.00 |       1550.00 |
-| 1212343433335665 |          1200.00 |       1725.60 |
-| 3212343433335755 |         50000.00 |      48679.50 |
-
-All four transfers complete, and the total across all accounts stays at
-$66,750.00.
-
-To run it (requires Ruby 4.0, see `backend/.ruby-version`):
+Start the server:
 
 ```bash
 cd backend
 bundle install
-bundle exec rspec spec/integration
+bundle exec rackup
 ```
 
-A transfer that cannot be applied is rejected with a reason, for example
-`account 1111234522226789 does not have sufficient funds to withdraw $9999.00`,
-and the remaining transfers still run.
+This loads the sample balances into memory and listens on
+`http://localhost:9292`. To start from your own balances file, name it:
 
-## File formats
-
-Neither file has a header row.
-
-| File      | Columns                            | Example                                    |
-|-----------|------------------------------------|--------------------------------------------|
-| Balances  | account number, balance            | `1111234522226789,5000.00`                 |
-| Transfers | from account, to account, amount   | `1111234522226789,1212343433335665,500.00` |
-
-## Assumptions
-
-The brief leaves these open. Each one is covered by a spec.
-
-**Transfers**
-
-- Transfers are applied in file order, so a later transfer can spend money
-  received by an earlier one.
-- A transfer that would overdraw the sending account is rejected. Taking a
-  balance to exactly $0 is allowed.
-- A rejected transfer changes no balances and does not stop the transfers
-  after it.
-- A transfer is also rejected if either account does not exist, if both
-  accounts are the same, if the amount is zero, or if the line cannot be read
-  (bad account number, bad or missing amount).
-
-**Balances**
-
-- The starting balances must be trustworthy, so one bad line stops the whole
-  load. The error names the line.
-- An account number may appear only once in the balances file.
-- An opening balance of $0 is allowed. A negative one is not.
-
-**Amounts and account numbers**
-
-- An account number is exactly 16 digits.
-- Amounts are dollars with up to two decimal places. `5.2` means $5.20;
-  `5.100` is rejected rather than rounded.
-- Amounts are stored as whole cents, never as decimal numbers, so arithmetic
-  is exact.
-
-## Repository layout
-
-```
-backend/    Ruby: business rules, CSV import, and later the database and HTTP API
-frontend/   React app (added in a later milestone)
+```bash
+BALANCES_FILE=path/to/balances.csv bundle exec rackup
 ```
 
-## Backend architecture
+A bad line in the balances file stops the server from starting, and the error
+names the line.
 
-The backend follows Domain-Driven Design. It is split into four layers, and
-each layer only depends on the layers above it in this table:
+From a second terminal, in `backend/`, post a day's transfers:
 
-| Layer                      | What it holds                                             |
-|----------------------------|-----------------------------------------------------------|
-| `lib/bank/domain/`         | Business rules in plain Ruby. No files, database or HTTP. |
-| `lib/bank/use_cases/`      | What the application does, using the domain.              |
-| `lib/bank/infrastructure/` | CSV reading and account storage.                          |
-| `lib/bank/web/`            | The HTTP API (added in a later milestone).                |
+```bash
+curl -F file=@spec/fixtures/transfers.csv http://localhost:9292/transfers
+```
 
-Keeping the business rules in `domain/` means they can be read and tested
-without a database or a web server.
+The response lists each transfer as `completed` or `rejected`, with the line
+number and the reason for a rejection, followed by the balances afterwards.
 
-### How a day's files flow through the layers
+To see the balances at any time:
 
-1. `Infrastructure::CsvFiles` splits each file into lines and columns. It does
-   not judge the contents.
-2. `UseCases::LoadAccounts` builds an `Account` from each balances line and
-   adds it to the repository.
-3. `UseCases::ProcessTransfers` builds a `Transfer` from each transfers line,
-   looks up the two accounts and asks the transfer to apply itself. Any broken
-   business rule becomes a rejection with a reason.
-4. The caller gets back one result per transfer: completed, or rejected with
-   the line number and the reason.
+```bash
+curl http://localhost:9292/accounts
+```
 
-## Domain model
+A header row is optional in both CSV files. A balances line is
+`account number,balance` and a transfers line is `from,to,amount`. Sample
+files are in `backend/spec/fixtures/`.
 
-| Class           | Kind         | What it is                                                 |
-|-----------------|--------------|------------------------------------------------------------|
-| `Money`         | Value object | An amount in whole cents. Never negative, never changes.   |
-| `AccountNumber` | Value object | Exactly 16 digits. If one exists, it is valid.             |
-| `Account`       | Entity       | An account number and a balance. Refuses to go below $0.   |
-| `Transfer`      | Value object | From, to and amount. Moves the money between two accounts. |
+Balances carry over from one post to the next, and reset when the server
+restarts.
 
-A value object is defined by its contents: two `Money` objects of $5.00 are
-equal. An entity is defined by its identity: two `Account` objects with the
-same number are the same account, whatever their balance.
-
-## Running the backend checks
+## Running the tests
 
 ```bash
 cd backend
-bundle exec rspec     # tests
-bundle exec rubocop   # style checks
+bundle exec rspec
+bundle exec rubocop
 ```
 
-The same two commands run in GitHub Actions on every pull request
-(`.github/workflows/ci.yml`).
+## Architecture
+
+The code is in `backend/lib/bank/` and follows Domain-Driven Design. It has
+four layers, and each one only depends on the ones above it in this table.
+
+| Layer             | What it does                                                                |
+|-------------------|-----------------------------------------------------------------------------|
+| `domain/`         | The business rules: `Money`, `AccountNumber`, `Account` and `Transfer`.     |
+| `use_cases/`      | `LoadAccounts` and `ProcessTransfers`, which put the domain objects to work.|
+| `infrastructure/` | Reads the CSV files, and keeps the accounts in memory.                      |
+| `web/`            | The HTTP API. It calls the use cases and returns JSON.                      |
+
+The domain layer is plain Ruby with no knowledge of files or HTTP, so the
+rules can be read and tested on their own.
+
+A posted transfers file goes through the layers like this:
+
+1. `Web::Api` reads the upload and passes the text to `Infrastructure::CsvFiles`,
+   which splits it into rows.
+2. `UseCases::ProcessTransfers` builds a `Transfer` from each row, finds the two
+   accounts and asks the transfer to apply itself.
+3. `Web::Api` returns each result, and the balances, as JSON.
+
+A few decisions shape the code:
+
+- **Money is whole cents.** Floats cannot represent every cent exactly, so
+  amounts are integers and `"25.60"` is parsed straight to `2560`.
+- **Each rule lives in one place.** Only `Account` knows a balance cannot go
+  below $0. Only `AccountNumber` knows a number is 16 digits.
+- **A broken rule raises a `Domain::Error`.** `ProcessTransfers` rescues that
+  one family and records a rejection, then carries on with the next transfer.
+- **A bad balances file stops everything; a bad transfer does not.** The
+  starting balances have to be trustworthy. A bad transfer line is one
+  rejected transfer.
+- **One transfers file is processed at a time**, so two uploads cannot both
+  spend the same balance.

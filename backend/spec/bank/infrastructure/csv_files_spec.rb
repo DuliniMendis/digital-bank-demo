@@ -24,6 +24,18 @@ RSpec.describe Bank::Infrastructure::CsvFiles do
       expect(described_class.transfer_requests(text).map(&:line)).to eq([1, 3])
     end
 
+    it 'skips a header row but keeps the real line numbers' do
+      text = "From,To,Amount\n1111234522226789,1212343433335665,5.00\n"
+
+      expect(described_class.transfer_requests(text).map(&:line)).to eq([2])
+    end
+
+    it 'does not mistake a mistyped account number on the first line for a header' do
+      rows = described_class.transfer_requests("11112345X2226789,1212343433335665,5.00\n")
+
+      expect(rows.map(&:from)).to eq(['11112345X2226789'])
+    end
+
     it 'leaves a missing column empty for the domain to reject' do
       rows = described_class.transfer_requests("1111234522226789,1212343433335665\n")
 
