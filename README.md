@@ -29,6 +29,19 @@ only depends on the layers above it in this table:
 Keeping the business rules in `domain/` means they can be read and tested
 without a database or a web server.
 
+## Domain model
+
+| Class           | Kind         | What it is                                                        |
+|-----------------|--------------|-------------------------------------------------------------------|
+| `Money`         | Value object | An amount in whole cents. Never negative, never changes.          |
+| `AccountNumber` | Value object | Exactly 16 digits. If one exists, it is valid.                    |
+| `Account`       | Entity       | An account number and a balance. Refuses to go below $0.          |
+| `Transfer`      | Value object | From, to and amount. Moves the money between two accounts.        |
+
+A value object is defined by its contents: two `Money` objects of $5.00 are
+equal. An entity is defined by its identity: two `Account` objects with the
+same number are the same account, whatever their balance.
+
 ## Running the backend checks
 
 Requires Ruby 4.0 (see `backend/.ruby-version`).
