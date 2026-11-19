@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require 'csv'
-require 'digest'
 
 module Bank
   module Infrastructure
@@ -23,13 +22,6 @@ module Bank
         rows(text).map do |line, fields|
           Application::TransferRequest.new(line: line, from: fields[0], to: fields[1], amount: fields[2])
         end
-      end
-
-      # A SHA-256 hash of the file's text: 64 characters that are the same
-      # whenever the text is the same, and different for any other text. It
-      # is how a file that was uploaded before is recognised.
-      def self.fingerprint(text)
-        Digest::SHA256.hexdigest(text)
       end
 
       # Returns [line number, fields] for every line of data.

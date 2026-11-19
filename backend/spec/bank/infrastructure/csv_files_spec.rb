@@ -61,12 +61,4 @@ RSpec.describe Bank::Infrastructure::CsvFiles do
       expect(rows.first.amount).to eq("5\uFFFD")
     end
   end
-
-  describe '.fingerprint' do
-    it 'is the same for the same text and different for any other text' do
-      fingerprints = ["a,b,1\n", "a,b,1\n", "a,b,2\n"].map { |text| described_class.fingerprint(text) }
-
-      expect(fingerprints.uniq.size).to eq(2)
-    end
-  end
 end

@@ -2,8 +2,8 @@
 
 # The money rules themselves are covered by the domain specs. These examples
 # cover what ProcessTransfers adds on top: finding the accounts, turning a
-# refusal into a rejection, working through the list in order, recording the
-# history, and refusing a file it has seen before.
+# refusal into a rejection, working through the list in order, and recording
+# the history.
 RSpec.describe Bank::Application::ProcessTransfers, :database do
   subject(:process_transfers) { described_class.new(accounts: accounts, history: history) }
 
@@ -35,21 +35,15 @@ RSpec.describe Bank::Application::ProcessTransfers, :database do
     accounts.find(Bank::Domain::AccountNumber.new(value: number)).balance.to_s
   end
 
-  # Applies the requests as one file. Every file in these examples is given
-  # the same fingerprint unless the example says otherwise.
-  def process(requests, fingerprint: 'a' * 64, apply_again: false)
-    process_transfers.call(requests, fingerprint: fingerprint, apply_again: apply_again)
-  end
-
   context 'when the transfer is valid' do
     it 'reports it as completed' do
-      results = process([request(alice, bob, '3.00')])
+      results = process_transfers.call([request(alice, bob, '3.00')])
 
       expect(results.first).to be_completed
     end
 
     it 'moves the money between the stored accounts' do
-      process([request(alice, bob, '3.00')])
+      process_transfers.call([request(alice, bob, '3.00')])
 
       expect([balance_of(alice), balance_of(bob)]).to eq(['7.00', '3.50'])
     end
@@ -57,13 +51,13 @@ RSpec.describe Bank::Application::ProcessTransfers, :database do
 
   context 'when the domain refuses the transfer' do
     it 'rejects a transfer the sender cannot afford, with the reason' do
-      results = process([request(alice, bob, '10.01')])
+      results = process_transfers.call([request(alice, bob, '10.01')])
 
       expect(results.first.rejection_reason).to include('does not have sufficient funds')
     end
 
     it 'rejects a line that cannot be read, with the reason' do
-      results = process([request(alice, bob, 'abc')])
+      results = process_transfers.call([request(alice, bob, 'abc')])
 
       expect(results.first.rejection_reason).to eq('"abc" is not a valid amount')
     end
@@ -71,13 +65,13 @@ RSpec.describe Bank::Application::ProcessTransfers, :database do
 
   context 'when the receiving account does not exist' do
     it 'rejects the transfer' do
-      results = process([request(alice, stranger, '1.00')])
+      results = process_transfers.call([request(alice, stranger, '1.00')])
 
       expect(results.first.rejection_reason).to eq('account 9999999999999999 does not exist')
     end
 
     it 'takes nothing from the sender' do
-      process([request(alice, stranger, '1.00')])
+      process_transfers.call([request(alice, stranger, '1.00')])
 
       expect(balance_of(alice)).to eq('10.00')
     end
@@ -92,7 +86,7 @@ RSpec.describe Bank::Application::ProcessTransfers, :database do
     end
 
     it 'undoes the withdrawal that was already saved' do
-      expect { process([request(alice, bob, '3.00')]) }
+      expect { process_transfers.call([request(alice, bob, '3.00')]) }
         .to raise_error('the database went away').and(not_change { balance_of(alice) })
     end
   end
@@ -107,44 +101,29 @@ RSpec.describe Bank::Application::ProcessTransfers, :database do
     end
 
     it 'carries on after a rejected transfer' do
-      results = process(requests)
+      results = process_transfers.call(requests)
 
       expect(results.map(&:completed?)).to eq([false, true, true])
     end
 
     it 'applies them in order, so a later transfer can spend earlier income' do
-      process(requests)
+      process_transfers.call(requests)
 
       expect(balance_of(bob)).to eq('0.00')
     end
   end
 
   it 'records each result in the history' do
-    results = process([request(alice, bob, '3.00'), request(alice, stranger, '1.00', line: 2)])
+    results = process_transfers.call([request(alice, bob, '3.00'), request(alice, stranger, '1.00', line: 2)])
 
     expect(history.all.map(&:result)).to eq(results)
-  end
-
-  context 'when a file with the same fingerprint was applied before' do
-    before { process([request(alice, bob, '3.00')]) }
-
-    it 'refuses it and moves no money' do
-      expect { process([request(alice, bob, '3.00')]) }
-        .to raise_error(Bank::Application::TransfersAlreadyApplied).and(not_change { balance_of(alice) })
-    end
-
-    it 'applies it when apply_again is true' do
-      process([request(alice, bob, '3.00')], apply_again: true)
-
-      expect(balance_of(alice)).to eq('4.00')
-    end
   end
 
   context 'when recording the history fails' do
     before { allow(history).to receive(:record).and_raise('the database went away') }
 
     it 'undoes the transfers, so the file can be sent again' do
-      expect { process([request(alice, bob, '3.00')]) }
+      expect { process_transfers.call([request(alice, bob, '3.00')]) }
         .to raise_error('the database went away').and(not_change { balance_of(alice) })
     end
   end

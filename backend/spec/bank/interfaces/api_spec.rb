@@ -24,9 +24,9 @@ RSpec.describe Bank::Interfaces::Api, :database do
 
   # Uploads the CSV text as a file in a form field called "file", the same
   # way `curl -F file=@transfers.csv` does.
-  def post_transfers(csv_text, **fields)
+  def post_transfers(csv_text)
     file = Rack::Test::UploadedFile.new(StringIO.new(csv_text), 'text/csv', original_filename: 'transfers.csv')
-    post '/api/transfers', file: file, **fields
+    post '/api/transfers', file: file
   end
 
   def body
@@ -91,11 +91,10 @@ RSpec.describe Bank::Interfaces::Api, :database do
       expect(body['transfers'].first).to include('status' => 'rejected', 'amount' => '5é')
     end
 
-    it 'keeps the balances between one file and the next' do
-      post_transfers(pay_one_hundred)
-      post_transfers("1111234522226789,1212343433335665,50.00\n")
+    it 'keeps the balances between one post and the next' do
+      2.times { post_transfers(pay_one_hundred) }
 
-      expect(balances['1111234522226789']).to eq('4850.00')
+      expect(balances['1111234522226789']).to eq('4800.00')
     end
 
     it 'answers 400 when no file is sent' do
@@ -114,28 +113,6 @@ RSpec.describe Bank::Interfaces::Api, :database do
       post_transfers(%("unclosed,quote\n))
 
       expect(last_response.status).to eq(400)
-    end
-  end
-
-  describe 'posting the same transfers file twice' do
-    before { post_transfers(pay_one_hundred) }
-
-    it 'answers 409 and says the file was already applied' do
-      post_transfers(pay_one_hundred)
-
-      expect([last_response.status, body['error']]).to match([409, /already been applied/])
-    end
-
-    it 'does not move the money a second time' do
-      post_transfers(pay_one_hundred)
-
-      expect(balances['1111234522226789']).to eq('4900.00')
-    end
-
-    it 'applies it again when apply_again is true' do
-      post_transfers(pay_one_hundred, apply_again: 'true')
-
-      expect(balances['1111234522226789']).to eq('4800.00')
     end
   end
 
@@ -165,7 +142,7 @@ RSpec.describe Bank::Interfaces::Api, :database do
       expect(balances['1111234522226789']).to eq('5000.00')
     end
 
-    it 'empties the history, so the same file can be applied again' do
+    it 'empties the history' do
       expect(history).to be_empty
     end
   end

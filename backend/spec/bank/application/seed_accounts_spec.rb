@@ -38,7 +38,7 @@ RSpec.describe Bank::Application::SeedAccounts, :database do
     before do
       seed_accounts.call([row(1, '1212343433335665', '7.00')])
       request = Bank::Application::TransferRequest.new(line: 1, from: 'a', to: 'b', amount: '1')
-      history.record('a' * 64, [Bank::Application::TransferResult.new(request: request, rejection_reason: 'bad')])
+      history.record([Bank::Application::TransferResult.new(request: request, rejection_reason: 'bad')])
     end
 
     it 'replaces the accounts already stored' do

@@ -11,10 +11,12 @@ module Bank
       end
 
       # Runs the block in a transaction that holds a lock on the whole table,
-      # so a second upload waits here until the first has finished. Without
-      # it, two copies of the same file arriving together could both find
-      # that the file is new, and both be applied. The history can still be
-      # read while the lock is held.
+      # so a second upload waits here until the first has finished. An
+      # upload keeps every account it touches locked until it finishes.
+      # Without this lock, two uploads running together could each hold an
+      # account the other needs next, and the database would stop one of
+      # them with an error. The history can still be read while the lock is
+      # held.
       def one_upload_at_a_time
         @database.transaction do
           @table.lock('EXCLUSIVE')
@@ -22,17 +24,11 @@ module Bank
         end
       end
 
-      def uploaded?(fingerprint)
-        !@table.where(fingerprint: fingerprint).empty?
-      end
-
       # Stores one row for each result. They all get the same upload time,
       # which is what groups them as one file in the history.
-      def record(fingerprint, results)
+      def record(results)
         uploaded_at = Time.now
-        results.each do |result|
-          @table.insert(to_row(result).merge(fingerprint: fingerprint, uploaded_at: uploaded_at))
-        end
+        results.each { |result| @table.insert(to_row(result).merge(uploaded_at: uploaded_at)) }
       end
 
       # The most recent upload comes first. Within one upload the lines are
