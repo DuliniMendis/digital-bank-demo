@@ -1,5 +1,10 @@
 # frozen_string_literal: true
 
+# Run Sinatra in test mode. In its default development mode it rejects any
+# request that is not addressed to localhost, and the test client addresses
+# its requests to example.org.
+ENV['APP_ENV'] = 'test'
+
 require 'bank'
 require_relative 'support/database'
 require_relative 'support/account_repository_examples'
@@ -8,10 +13,6 @@ require_relative 'support/account_repository_examples'
 RSpec::Matchers.define_negated_matcher :not_change, :change
 
 RSpec.configure do |config|
-  config.expect_with :rspec do |expectations|
-    expectations.include_chain_clauses_in_custom_matcher_descriptions = true
-  end
-
   config.mock_with :rspec do |mocks|
     mocks.verify_partial_doubles = true
   end

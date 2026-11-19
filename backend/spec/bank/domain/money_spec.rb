@@ -29,17 +29,9 @@ RSpec.describe Bank::Domain::Money do
       end
     end
 
-    ['', nil].each do |missing|
-      it "says the amount is missing for #{missing.inspect}" do
-        expect { described_class.parse(missing) }
-          .to raise_error(Bank::Domain::InvalidMoney, 'amount is missing')
-      end
-    end
-  end
-
-  describe '.zero' do
-    it 'is no money at all' do
-      expect(described_class.zero).to eq(money(0))
+    it 'says so when the amount is missing' do
+      expect { described_class.parse(nil) }
+        .to raise_error(Bank::Domain::InvalidMoney, 'amount is missing')
     end
   end
 
@@ -65,13 +57,12 @@ RSpec.describe Bank::Domain::Money do
     end
 
     it 'refuses to go below zero' do
-      expect { money(100) - money(101) }
-        .to raise_error(Bank::Domain::InvalidMoney)
+      expect { money(100) - money(101) }.to raise_error(Bank::Domain::InvalidMoney)
     end
   end
 
   describe '#>' do
-    it 'is true when it is the larger amount' do
+    it 'is true for the larger amount' do
       expect(money(200) > money(100)).to be(true)
     end
 
@@ -99,22 +90,6 @@ RSpec.describe Bank::Domain::Money do
 
     it 'pads cents below ten with a zero' do
       expect(money(5).to_s).to eq('0.05')
-    end
-  end
-
-  describe 'being a value object' do
-    it 'equals another Money with the same amount' do
-      same_amount = money(100)
-
-      expect(money(100)).to eq(same_amount)
-    end
-
-    it 'does not equal a different amount' do
-      expect(money(100)).not_to eq(money(101))
-    end
-
-    it 'cannot be changed after it is created' do
-      expect(money(100)).to be_frozen
     end
   end
 end

@@ -4,15 +4,23 @@ source 'https://rubygems.org'
 
 ruby file: '.ruby-version'
 
-# Reads CSV files. It stopped being built into Ruby in version 3.4.
+# CSV parsing used to be part of Ruby itself. Since Ruby 3.4 it is a
+# separate gem that has to be listed here.
 gem 'csv'
 
-# The Postgres driver, and Sequel, a small library for talking to the
-# database in Ruby instead of raw SQL strings.
+# pg is the Postgres driver. Sequel sits on top of it and lets the code
+# describe queries in Ruby instead of writing SQL strings.
 gem 'pg'
 gem 'sequel'
 
+# Sinatra is the web framework, Puma is the server it runs on, and rackup
+# provides the command that starts it.
+gem 'puma'
+gem 'rackup'
+gem 'sinatra'
+
 group :development, :test do
+  gem 'rack-test'
   gem 'rspec', '~> 3.13'
   gem 'rubocop', require: false
   gem 'rubocop-rspec', require: false
