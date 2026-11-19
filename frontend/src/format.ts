@@ -1,5 +1,5 @@
 // Turns "4820.50" into "$4,820.50". It works on the text and never converts
-// to a number, for the same reason the API sends balances as strings.
+// to a number, so the amount cannot pick up a float's rounding error.
 export function formatMoney(amount: string): string {
   const [dollars, cents] = amount.split('.')
   const withCommas = dollars.replace(/\B(?=(\d{3})+$)/g, ',')
