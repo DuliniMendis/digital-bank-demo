@@ -72,9 +72,9 @@ module Bank
         end
 
         def apply(csv, apply_again:)
-          UseCases::ApplyTransfersFile.new(accounts: settings.accounts, history: settings.history).call(
+          UseCases::ProcessTransfers.new(accounts: settings.accounts, history: settings.history).call(
+            Infrastructure::CsvFiles.transfer_requests(csv),
             fingerprint: Infrastructure::CsvFiles.fingerprint(csv),
-            requests: Infrastructure::CsvFiles.transfer_requests(csv),
             apply_again: apply_again
           )
         end
