@@ -6,8 +6,9 @@ module Bank
     # talk to a repository and do not care how it stores things.
     #
     # This one keeps accounts in memory, in a Hash keyed by account number.
-    # It is used by the command-line runner and by the specs. A database
-    # version with the same three methods arrives in a later milestone.
+    # It lets the use cases run, and be tested, without a database. A
+    # database version with the same three methods arrives in a later
+    # milestone.
     #
     # The rule "an account number can only exist once" lives here, because
     # it is a rule about the whole collection and not about one account.
