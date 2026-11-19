@@ -16,6 +16,14 @@ module Bank
     # Money is never negative in this system.
     Money = Data.define(:cents) do
       # Builds Money from text such as "25.60", "500" or "0.5".
+      #
+      # One decimal digit is accepted: "5.2" means $5.20. It can only mean
+      # one thing, and spreadsheets often drop the trailing zero when they
+      # export a CSV file.
+      #
+      # Three or more decimal digits are rejected: "5.100" raises
+      # InvalidMoney. Dropping or rounding the extra digits would silently
+      # change the amount, so it is safer to refuse.
       def self.parse(text)
         match = /\A(\d+)(?:\.(\d{1,2}))?\z/.match(text.to_s.strip)
         raise InvalidMoney, "#{text.inspect} is not a valid amount" unless match
