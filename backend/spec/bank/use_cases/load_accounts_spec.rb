@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # These examples cover what LoadAccounts itself does. What makes an account
-# number or a balance valid is tested in spec/bank/domain.
+# number or a balance valid is covered by the domain specs.
 RSpec.describe Bank::UseCases::LoadAccounts do
   subject(:load_accounts) { described_class.new(accounts: accounts) }
 

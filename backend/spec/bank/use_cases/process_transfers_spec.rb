@@ -1,9 +1,8 @@
 # frozen_string_literal: true
 
-# The money rules themselves (overdrafts, zero amounts, account number
-# format) are tested in spec/bank/domain. These examples cover what
-# ProcessTransfers adds on top: finding the accounts, turning a refusal into
-# a rejection, and working through the list in order.
+# The money rules themselves are covered by the domain specs. These examples
+# cover what ProcessTransfers adds on top: finding the accounts, turning a
+# refusal into a rejection, and working through the list in order.
 RSpec.describe Bank::UseCases::ProcessTransfers do
   subject(:process_transfers) { described_class.new(accounts: accounts) }
 

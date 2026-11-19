@@ -3,7 +3,7 @@
 # The `rackup` command reads this file to start the server:
 #
 #   DATABASE_URL=postgres://localhost/bank_development \
-#   BALANCES_FILE=spec/fixtures/account_balances.csv bundle exec rackup
+#   BALANCES_FILE=path/to/balances.csv bundle exec rackup
 #
 # The tables are created and the balances are in place before the server
 # accepts its first request.

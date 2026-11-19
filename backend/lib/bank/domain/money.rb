@@ -34,9 +34,6 @@ module Bank
         with(cents: cents + other.cents)
       end
 
-      # `with` builds a new Money, which runs the check in `initialize` again.
-      # That is why subtracting a larger amount raises InvalidMoney instead of
-      # returning a negative amount.
       def -(other)
         with(cents: cents - other.cents)
       end
