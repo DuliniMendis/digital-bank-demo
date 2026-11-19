@@ -2,10 +2,10 @@
 
 # These examples cover what LoadAccounts itself does. What makes an account
 # number or a balance valid is covered by the domain specs.
-RSpec.describe Bank::UseCases::LoadAccounts do
+RSpec.describe Bank::UseCases::LoadAccounts, :database do
   subject(:load_accounts) { described_class.new(accounts: accounts) }
 
-  let(:accounts) { Bank::Infrastructure::InMemoryAccountRepository.new }
+  let(:accounts) { Bank::Infrastructure::PostgresAccountRepository.new(database) }
 
   def row(line, number, balance)
     Bank::UseCases::OpeningBalance.new(line: line, number: number, balance: balance)
@@ -33,14 +33,10 @@ RSpec.describe Bank::UseCases::LoadAccounts do
       .to raise_error(Bank::UseCases::InvalidOpeningBalances, /\Aline 2: .*already exists/)
   end
 
-  context 'with accounts kept in Postgres', :database do
-    let(:accounts) { Bank::Infrastructure::PostgresAccountRepository.new(database) }
+  it 'stores no accounts at all when one line is bad' do
+    rows = [row(1, '1111234522226789', '1'), row(2, '12345', '1')]
 
-    it 'stores no accounts at all when one line is bad' do
-      rows = [row(1, '1111234522226789', '1'), row(2, '12345', '1')]
-
-      expect { load_accounts.call(rows) }
-        .to raise_error(Bank::UseCases::InvalidOpeningBalances).and(not_change { loaded })
-    end
+    expect { load_accounts.call(rows) }
+      .to raise_error(Bank::UseCases::InvalidOpeningBalances).and(not_change { loaded })
   end
 end

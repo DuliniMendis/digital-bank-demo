@@ -3,10 +3,10 @@
 # The money rules themselves are covered by the domain specs. These examples
 # cover what ProcessTransfers adds on top: finding the accounts, turning a
 # refusal into a rejection, and working through the list in order.
-RSpec.describe Bank::UseCases::ProcessTransfers do
+RSpec.describe Bank::UseCases::ProcessTransfers, :database do
   subject(:process_transfers) { described_class.new(accounts: accounts) }
 
-  let(:accounts) { Bank::Infrastructure::InMemoryAccountRepository.new }
+  let(:accounts) { Bank::Infrastructure::PostgresAccountRepository.new(database) }
   let(:alice) { '1111234522226789' }
   let(:bob) { '1212343433335665' }
   let(:stranger) { '9999999999999999' }
@@ -75,11 +75,8 @@ RSpec.describe Bank::UseCases::ProcessTransfers do
     end
   end
 
-  # This is why each transfer runs in a transaction. It needs a real
-  # database, because only a database can undo a save.
-  context 'when saving fails halfway through a transfer', :database do
-    let(:accounts) { Bank::Infrastructure::PostgresAccountRepository.new(database) }
-
+  # This is why each transfer runs in a transaction.
+  context 'when saving fails halfway through a transfer' do
     before do
       receiver = having_attributes(number: Bank::Domain::AccountNumber.new(value: bob))
       allow(accounts).to receive(:save).and_call_original

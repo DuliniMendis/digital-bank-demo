@@ -40,8 +40,8 @@ module Bank
 
       # Both accounts are looked up before any money moves, so a transfer to
       # an account that does not exist takes nothing from the sender. The two
-      # saves happen inside the transaction, so a database keeps both new
-      # balances or neither.
+      # saves happen inside the transaction, so both new balances are kept or
+      # neither is.
       def move_money(transfer)
         source = @accounts.find(transfer.from)
         destination = @accounts.find(transfer.to)

@@ -13,7 +13,7 @@ module Bank
     # Creates an account for each line of the balances file. It stops at the
     # first bad line, because the transfers should not be run against
     # starting balances that cannot be trusted. The load runs in one
-    # transaction, so a database stores every account in the file or none.
+    # transaction, so either every account in the file is stored or none is.
     class LoadAccounts
       def initialize(accounts:)
         @accounts = accounts
