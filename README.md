@@ -4,14 +4,60 @@ A very simple banking service. It loads account balances for one company from a
 CSV file, then applies a day's transfers from a second CSV file. A transfer is
 rejected if it would take the sending account below $0.
 
-This repository is being built one milestone at a time. Each milestone is one
-pull request.
+It runs as a small server: the balances file is loaded when the server starts,
+and each day's transfers file is posted to it.
+
+This branch, `main`, is the answer to the brief and nothing more. A longer
+version that adds a database is being built on the
+[`extended`](../../tree/extended) branch.
+
+## Try it
+
+Requires Ruby 4.0 (see `backend/.ruby-version`).
+
+**1. Start the server with a balances file**
+
+```bash
+cd backend
+bundle install
+BALANCES_FILE=spec/fixtures/account_balances.csv bundle exec rackup
+```
+
+The balances are loaded into memory and the server listens on
+`http://localhost:9292`. If the balances file has a bad line, the server
+refuses to start and names the line.
+
+**2. Post a day's transfers** (from a second terminal, in `backend/`)
+
+```bash
+curl -F file=@spec/fixtures/transfers.csv http://localhost:9292/transfers
+```
+
+The response lists every transfer as `completed` or `rejected`, with the line
+number and the reason for a rejection, followed by the balances afterwards:
+
+```json
+{
+  "transfers": [
+    { "line": 1, "from": "1111234522226789", "to": "1212343433335665",
+      "amount": "500.00", "status": "completed", "reason": null }
+  ],
+  "accounts": [
+    { "number": "1111234522226789", "balance": "4820.50" }
+  ]
+}
+```
+
+**3. See the current balances at any time**
+
+```bash
+curl http://localhost:9292/accounts
+```
 
 ## The sample files
 
-The two sample files from the brief are in `backend/spec/fixtures/`. An
-end-to-end spec (`backend/spec/integration/sample_files_spec.rb`) loads the
-balances, applies the transfers and checks the result:
+The two sample files from the brief are in `backend/spec/fixtures/`. Posting
+the transfers file to a server started with the balances file gives:
 
 | Account          | Starting balance | Final balance |
 |------------------|-----------------:|--------------:|
@@ -21,20 +67,8 @@ balances, applies the transfers and checks the result:
 | 1212343433335665 |          1200.00 |       1725.60 |
 | 3212343433335755 |         50000.00 |      48679.50 |
 
-All four transfers complete, and the total across all accounts stays at
-$66,750.00.
-
-To run it (requires Ruby 4.0, see `backend/.ruby-version`):
-
-```bash
-cd backend
-bundle install
-bundle exec rspec spec/integration
-```
-
-A transfer that cannot be applied is rejected with a reason, for example
-`account 1111234522226789 does not have sufficient funds to withdraw $9999.00`,
-and the remaining transfers still run.
+All four transfers complete. A spec checks exactly this through the HTTP
+endpoint (`backend/spec/bank/web/api_spec.rb`).
 
 ## File formats
 
@@ -68,6 +102,15 @@ The brief leaves these open. Each one is covered by a spec.
 - An account number may appear only once in the balances file.
 - An opening balance of $0 is allowed. A negative one is not.
 
+**The server**
+
+- Balances are loaded once, from the file named when the server starts. There
+  is no endpoint to change them.
+- Balances are kept in memory and carry over from one post to the next.
+  Posting the same transfers file twice applies it twice.
+- Restarting the server puts every account back to its starting balance.
+- Transfers files are processed one at a time, even if two arrive together.
+
 **Amounts and account numbers**
 
 - An account number is exactly 16 digits.
@@ -76,39 +119,39 @@ The brief leaves these open. Each one is covered by a spec.
 - Amounts are stored as whole cents, never as decimal numbers, so arithmetic
   is exact.
 
-## Repository layout
+## Architecture
 
-```
-backend/    Ruby: business rules, CSV import, and later the database and HTTP API
-frontend/   React app (added in a later milestone)
-```
-
-## Backend architecture
-
-The backend follows Domain-Driven Design. It is split into four layers, and
-each layer only depends on the layers above it in this table:
+All the code is in `backend/`. It follows Domain-Driven Design and is split
+into four layers. Each layer only depends on the layers above it in this
+table:
 
 | Layer                      | What it holds                                             |
 |----------------------------|-----------------------------------------------------------|
 | `lib/bank/domain/`         | Business rules in plain Ruby. No files, database or HTTP. |
 | `lib/bank/use_cases/`      | What the application does, using the domain.              |
-| `lib/bank/infrastructure/` | CSV reading and account storage.                          |
-| `lib/bank/web/`            | The HTTP API (added in a later milestone).                |
+| `lib/bank/infrastructure/` | CSV reading, and keeping the accounts in memory.          |
+| `lib/bank/web/`            | The HTTP API. Turns requests into use-case calls.         |
 
 Keeping the business rules in `domain/` means they can be read and tested
 without a database or a web server.
 
 ### How a day's files flow through the layers
 
-1. `Infrastructure::CsvFiles` splits each file into lines and columns. It does
+At startup:
+
+1. `config.ru` asks `Web::Api` to load the balances file.
+2. `Infrastructure::CsvFiles` splits the file into lines and columns. It does
    not judge the contents.
-2. `UseCases::LoadAccounts` builds an `Account` from each balances line and
-   adds it to the repository.
-3. `UseCases::ProcessTransfers` builds a `Transfer` from each transfers line,
-   looks up the two accounts and asks the transfer to apply itself. Any broken
-   business rule becomes a rejection with a reason.
-4. The caller gets back one result per transfer: completed, or rejected with
-   the line number and the reason.
+3. `UseCases::LoadAccounts` builds an `Account` from each line and adds it to
+   the in-memory repository.
+
+For each posted transfers file:
+
+1. `Web::Api` reads the uploaded file and hands it to `CsvFiles`.
+2. `UseCases::ProcessTransfers` builds a `Transfer` from each line, looks up
+   the two accounts and asks the transfer to apply itself. Any broken business
+   rule becomes a rejection with a reason.
+3. `Web::Api` turns the results and the current balances into JSON.
 
 ## Domain model
 
@@ -123,7 +166,7 @@ A value object is defined by its contents: two `Money` objects of $5.00 are
 equal. An entity is defined by its identity: two `Account` objects with the
 same number are the same account, whatever their balance.
 
-## Running the backend checks
+## Running the checks
 
 ```bash
 cd backend

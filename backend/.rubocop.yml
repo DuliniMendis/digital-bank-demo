@@ -7,11 +7,6 @@ AllCops:
   Exclude:
     - 'vendor/**/*'
 
-# Integration specs describe a whole flow, not one class.
-RSpec/DescribeClass:
-  Exclude:
-    - 'spec/integration/**/*'
-
 # Keep methods short so each one does a single, readable thing.
 Metrics/MethodLength:
   Max: 10

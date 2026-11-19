@@ -7,7 +7,7 @@
 #
 #   domain          business rules, in plain Ruby
 #   use_cases       what the application does, using the domain
-#   infrastructure  CSV files and storage
+#   infrastructure  CSV files, and keeping the accounts in memory
 #   web             the HTTP API
 module Bank
 end
@@ -23,3 +23,5 @@ require_relative 'bank/use_cases/process_transfers'
 
 require_relative 'bank/infrastructure/in_memory_account_repository'
 require_relative 'bank/infrastructure/csv_files'
+
+require_relative 'bank/web/api'
