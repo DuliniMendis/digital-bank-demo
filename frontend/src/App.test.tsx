@@ -2,7 +2,7 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import App from './App'
-import type { Account, Transfer } from './api'
+import type { Account, Transfer } from './lib/api'
 
 // These tests render the whole page and replace `fetch` with a stand-in, so
 // no server is needed. Each test says what the "server" will answer, then
