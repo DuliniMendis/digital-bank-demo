@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
-import { getAccounts, getHistory, postTransfers, resetDemo } from './api'
+import { getAccounts, postTransfers, resetDemo } from './api'
 import type { Account, Transfer } from './api'
 import { AccountsSection } from './components/AccountsSection'
-import { HistorySection } from './components/HistorySection'
 import { PageHeader } from './components/PageHeader'
 import { UploadSection } from './components/UploadSection'
 
@@ -14,9 +13,9 @@ type Busy = 'loading' | 'uploading' | 'resetting' | null
 // the two buttons do. The components below only show what they are given.
 export default function App() {
   const [accounts, setAccounts] = useState<Account[]>([])
-  const [history, setHistory] = useState<Transfer[]>([])
 
   // The transfers from the most recent upload, or null before any upload.
+  // They are only kept here, so they are gone when the page is reloaded.
   const [results, setResults] = useState<Transfer[] | null>(null)
 
   const [error, setError] = useState<string | null>(null)
@@ -24,11 +23,8 @@ export default function App() {
 
   // Runs once, when the page first appears.
   useEffect(() => {
-    Promise.all([getAccounts(), getHistory()])
-      .then(([loadedAccounts, loadedHistory]) => {
-        setAccounts(loadedAccounts)
-        setHistory(loadedHistory)
-      })
+    getAccounts()
+      .then(setAccounts)
       .catch(showError)
       .finally(() => setBusy(null))
   }, [])
@@ -44,7 +40,6 @@ export default function App() {
       const result = await postTransfers(file)
       setResults(result.transfers)
       setAccounts(result.accounts)
-      setHistory(await getHistory())
     } catch (caught) {
       showError(caught)
     } finally {
@@ -57,7 +52,6 @@ export default function App() {
     setError(null)
     try {
       setAccounts(await resetDemo())
-      setHistory([])
       setResults(null)
     } catch (caught) {
       showError(caught)
@@ -78,7 +72,6 @@ export default function App() {
 
       <AccountsSection accounts={accounts} loading={busy === 'loading'} errorShown={error !== null} />
       <UploadSection uploading={busy === 'uploading'} results={results} onUpload={upload} />
-      <HistorySection history={history} loading={busy === 'loading'} />
     </div>
   )
 }

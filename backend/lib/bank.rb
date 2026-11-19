@@ -6,8 +6,7 @@
 #
 #   domain          the business rules
 #   application     the operations the app performs, built from the domain
-#   infrastructure  reading CSV files, and storing the accounts and the
-#                   transfer history in Postgres
+#   infrastructure  reading CSV files, and storing the accounts in Postgres
 #   interfaces      the HTTP API
 module Bank
 end
@@ -23,7 +22,6 @@ require_relative 'bank/application/process_transfers'
 
 require_relative 'bank/infrastructure/database'
 require_relative 'bank/infrastructure/account_repository'
-require_relative 'bank/infrastructure/transfer_history'
 require_relative 'bank/infrastructure/csv_files'
 
 require_relative 'bank/interfaces/api'

@@ -1,20 +1,11 @@
 import type { Transfer } from '../api'
-import { formatTime } from '../format'
 
-type Props = {
-  transfers: Transfer[]
-  // The history shows when each file was uploaded. The result of a single
-  // upload does not need to, because every row would say the same.
-  showUploadTime?: boolean
-}
-
-export function TransfersTable({ transfers, showUploadTime = false }: Props) {
+export function TransfersTable({ transfers }: { transfers: Transfer[] }) {
   return (
     <div className="table-scroll">
       <table>
         <thead>
           <tr>
-            {showUploadTime && <th scope="col">Uploaded</th>}
             <th scope="col">Line</th>
             <th scope="col">From</th>
             <th scope="col">To</th>
@@ -25,13 +16,8 @@ export function TransfersTable({ transfers, showUploadTime = false }: Props) {
           </tr>
         </thead>
         <tbody>
-          {transfers.map((transfer, index) => (
-            // A line number repeats from one file to the next, so the row's
-            // position is what makes each key unique.
-            <tr key={index}>
-              {showUploadTime && (
-                <td className="muted nowrap">{transfer.uploaded_at && formatTime(transfer.uploaded_at)}</td>
-              )}
+          {transfers.map((transfer) => (
+            <tr key={transfer.line}>
               <td className="muted">{transfer.line}</td>
               <td className="mono">{transfer.from}</td>
               <td className="mono">{transfer.to}</td>

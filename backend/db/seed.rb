@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-# Loads the opening balances into the database and empties the transfer
-# history. Run it once before the server is first started, and again
-# whenever the accounts should go back to their opening balances:
+# Loads the opening balances into the database. Run it once before the
+# server is first started, and again whenever the accounts should go back to
+# their opening balances:
 #
 #   DATABASE_URL=postgres://localhost/bank_development bundle exec ruby db/seed.rb
 #
@@ -16,13 +16,12 @@ balances_file = ENV.fetch('BALANCES_FILE', sample_balances)
 
 database = Bank::Infrastructure::Database.from_environment
 accounts = Bank::Infrastructure::AccountRepository.new(database)
-history = Bank::Infrastructure::TransferHistory.new(database)
 opening_balances = Bank::Infrastructure::CsvFiles.opening_balances(File.read(balances_file))
 
 # A bad line in the file stops the seeding, and whatever the database held
 # before is left untouched.
 begin
-  Bank::Application::SeedAccounts.new(accounts: accounts, history: history).call(opening_balances)
+  Bank::Application::SeedAccounts.new(accounts: accounts).call(opening_balances)
 rescue Bank::Application::InvalidOpeningBalances => e
   abort "Nothing was changed. #{balances_file}, #{e.message}"
 end

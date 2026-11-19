@@ -3,10 +3,9 @@
 # These examples cover what SeedAccounts itself does. What makes an account
 # number or a balance valid is covered by the domain specs.
 RSpec.describe Bank::Application::SeedAccounts, :database do
-  subject(:seed_accounts) { described_class.new(accounts: accounts, history: history) }
+  subject(:seed_accounts) { described_class.new(accounts: accounts) }
 
   let(:accounts) { Bank::Infrastructure::AccountRepository.new(database) }
-  let(:history) { Bank::Infrastructure::TransferHistory.new(database) }
 
   def row(line, number, balance)
     Bank::Application::OpeningBalance.new(line: line, number: number, balance: balance)
@@ -34,12 +33,8 @@ RSpec.describe Bank::Application::SeedAccounts, :database do
       .to raise_error(Bank::Application::InvalidOpeningBalances, /\Aline 2: .*already exists/)
   end
 
-  context 'when the database was seeded and used before' do
-    before do
-      seed_accounts.call([row(1, '1212343433335665', '7.00')])
-      request = Bank::Application::TransferRequest.new(line: 1, from: 'a', to: 'b', amount: '1')
-      history.record([Bank::Application::TransferResult.new(request: request, rejection_reason: 'bad')])
-    end
+  context 'when the database was seeded before' do
+    before { seed_accounts.call([row(1, '1212343433335665', '7.00')]) }
 
     it 'replaces the accounts already stored' do
       seed_accounts.call([row(1, '1111234522226789', '5000.00')])
@@ -47,18 +42,11 @@ RSpec.describe Bank::Application::SeedAccounts, :database do
       expect(stored).to eq([%w[1111234522226789 5000.00]])
     end
 
-    it 'empties the history' do
-      seed_accounts.call([row(1, '1111234522226789', '5000.00')])
-
-      expect(history.all).to be_empty
-    end
-
-    it 'leaves both as they were when a line is bad' do
+    it 'leaves them as they were when a line is bad' do
       rows = [row(1, '1111234522226789', '1'), row(2, '12345', '1')]
 
       expect { seed_accounts.call(rows) }
-        .to raise_error(Bank::Application::InvalidOpeningBalances)
-        .and(not_change { [stored, history.all.size] })
+        .to raise_error(Bank::Application::InvalidOpeningBalances).and(not_change { stored })
     end
   end
 end

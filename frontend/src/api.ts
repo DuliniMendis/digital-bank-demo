@@ -17,8 +17,6 @@ export type Transfer = {
   amount: string | null
   status: 'completed' | 'rejected'
   reason: string | null
-  // Only present on transfers read from the history.
-  uploaded_at?: string
 }
 
 export type UploadResult = {
@@ -46,11 +44,6 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 export async function getAccounts(): Promise<Account[]> {
   const body = await request<{ accounts: Account[] }>('/api/accounts')
   return body.accounts
-}
-
-export async function getHistory(): Promise<Transfer[]> {
-  const body = await request<{ transfers: Transfer[] }>('/api/transfers')
-  return body.transfers
 }
 
 export function postTransfers(file: File): Promise<UploadResult> {

@@ -5,8 +5,8 @@ file, then applies a day's transfers from a second CSV file. A transfer that
 would take the sending account below $0 is rejected.
 
 This is the `extended` branch. The `main` branch is the simplest version that
-answers the brief and keeps everything in memory. This branch adds a Postgres
-database, a history of every transfer, and a web page to use it from.
+answers the brief and keeps everything in memory. On this branch the accounts
+are kept in a Postgres database, and there is a web page to use it from.
 
 ```
 backend/    Ruby: the business rules, the database and the HTTP API
@@ -59,20 +59,18 @@ The other routes:
 
 ```bash
 curl http://localhost:9292/api/accounts           # the current balances
-curl http://localhost:9292/api/transfers          # every transfer so far, newest file first
-curl -X POST http://localhost:9292/api/reset      # reseeds: opening balances again, no history
+curl -X POST http://localhost:9292/api/reset      # reseeds: puts the opening balances back
 ```
 
 A header row is optional in both CSV files. A balances line is
 `account number,balance` and a transfers line is `from,to,amount`. Sample
 files are in `backend/spec/fixtures/`.
 
-Balances and history are kept in the database, so they are still there after
-the server restarts. To go back to the opening balances, reseed: either post
-to the reset route or run the seed command again. Both replace the accounts
-and empty the history. The reset route reads the same balances file as the
-seed command, so start the server with the same `BALANCES_FILE` if you named
-one.
+Balances are kept in the database, so they are still there after the server
+restarts. To go back to the opening balances, reseed: either post to the reset
+route or run the seed command again. Both replace whatever accounts the
+database holds. The reset route reads the same balances file as the seed
+command, so start the server with the same `BALANCES_FILE` if you named one.
 
 ### The web page
 
@@ -85,10 +83,11 @@ npm run dev
 ```
 
 Open `http://localhost:5173`. The page shows the balances, uploads a
-transfers file, lists each transfer as completed or rejected, and shows the
-history. "Reset to opening balances" calls the reset route, which reseeds the
-database. On a database that was never seeded, that button is how the page
-loads the balances.
+transfers file, and lists each transfer in it as completed or rejected. That
+result stays on the page until the next upload, a reset or a reload; nothing
+keeps a history of past uploads. "Reset to opening balances" calls the reset
+route, which reseeds the database. On a database that was never seeded, that
+button is how the page loads the balances.
 
 The page calls the API at `/api/...` on its own address, and the development
 server passes those requests on to port 9292 (see `frontend/vite.config.ts`).
@@ -106,7 +105,7 @@ bundle exec rspec
 bundle exec rubocop
 ```
 
-To use a database somewhere else, set `DATABASE_URL`, for example
+To use a test database somewhere else, set `DATABASE_URL`, for example
 `postgres://user:password@localhost/bank_test`. The specs for the domain and
 for reading CSV files need no database. To run only those:
 
@@ -129,22 +128,22 @@ npm run lint
 The code is in `backend/lib/bank/` and follows Domain-Driven Design. It has
 four layers, and each one only depends on the ones above it in this table.
 
-| Layer             | What it does                                                                  |
-|-------------------|-------------------------------------------------------------------------------|
-| `domain/`         | The business rules: `Money`, `AccountNumber`, `Account` and `Transfer`.       |
-| `application/`    | The operations the app performs, built from the domain objects.               |
-| `infrastructure/` | Reads the CSV files, and stores the accounts and the history in Postgres.     |
-| `interfaces/`     | The HTTP API. It calls the application services and returns JSON.             |
+| Layer             | What it does                                                                |
+|-------------------|-----------------------------------------------------------------------------|
+| `domain/`         | The business rules: `Money`, `AccountNumber`, `Account` and `Transfer`.     |
+| `application/`    | The operations the app performs, built from the domain objects.             |
+| `infrastructure/` | Reads the CSV files, and stores the accounts in Postgres.                   |
+| `interfaces/`     | The HTTP API. It calls the application services and returns JSON.           |
 
 The domain layer is plain Ruby with no knowledge of files, the database or
 HTTP, so the rules can be read and tested on their own.
 
 There are two application services:
 
-| Service            | What it does                                                             |
-|--------------------|--------------------------------------------------------------------------|
-| `SeedAccounts`     | Empties the accounts and the history, then stores one account for each line of the balances file. Seeds and reseeds. |
-| `ProcessTransfers` | Applies a file's transfers in order, completing or rejecting each one, and records them in the history. |
+| Service            | What it does                                                            |
+|--------------------|-------------------------------------------------------------------------|
+| `SeedAccounts`     | Replaces the stored accounts with one for each line of the balances file. Used to seed and to reseed. |
+| `ProcessTransfers` | Applies a list of transfers in order, completing or rejecting each one. |
 
 A posted transfers file goes through the layers like this:
 
@@ -152,21 +151,22 @@ A posted transfers file goes through the layers like this:
    which splits it into rows.
 2. `Application::ProcessTransfers` builds a `Transfer` from each row, finds the two
    accounts and asks the transfer to apply itself.
-3. `ProcessTransfers` records every result in the history.
-4. `Interfaces::Api` returns each result, and the balances, as JSON.
+3. `Interfaces::Api` returns each result, and the balances, as JSON.
 
 ### Storage
 
-The application services never talk to the database directly. They are handed two
-objects from `infrastructure/`:
+The application services never talk to the database directly. They are handed a
+*repository*, `AccountRepository`, which adds, finds and saves
+accounts in the `accounts` table:
 
-| Object              | Table       | What it keeps                                       |
-|---------------------|-------------|-----------------------------------------------------|
-| `AccountRepository` | `accounts`  | Each account number and its balance in whole cents. |
-| `TransferHistory`   | `transfers` | One row per line of every uploaded transfers file.  |
+| Column          | Meaning                                                      |
+|-----------------|--------------------------------------------------------------|
+| `id`            | Records the order the accounts were added in.                |
+| `number`        | The 16 digit account number. Must be unique.                 |
+| `balance_cents` | The balance in whole cents. The database refuses a negative. |
 
-The tables are created by the files in `backend/db/migrations/`, which the
-server and the seed command both run when they start.
+The table is created by the file in `backend/db/migrations/`, which the server
+and the seed command both run when they start.
 
 ### Decisions that shape the code
 
@@ -179,12 +179,11 @@ server and the seed command both run when they start.
 - **A bad balances file stops everything; a bad transfer does not.** The
   starting balances have to be trustworthy. A bad transfer line is one
   rejected transfer.
-- **A transfers file is all or nothing if something breaks.** The balance
-  changes and the history rows are saved in one database transaction. A
-  rejected transfer is not a failure; a lost database connection is.
-- **One transfers file is processed at a time.** Each upload takes a lock on
-  the `transfers` table and holds it until the file is finished, so a second
-  upload waits for the first and the two cannot both spend the same balance.
+- **A transfer is all or nothing.** Each one runs in its own database
+  transaction, so both balances are saved or neither is. Seeding works the
+  same way for the whole balances file.
+- **Two transfers cannot both spend the same balance.** Looking up an account
+  for a transfer locks its row in the database until that transfer is saved.
 
 ### Frontend
 
@@ -195,7 +194,7 @@ built with Vite.
 |---------------------------------|-----------------------------------------------------------------|
 | `api.ts`                        | Every call to the API. No other file uses `fetch`.              |
 | `App.tsx`                       | The page: what it remembers, what each button does, and the order of its sections. |
-| `format.ts`                     | Shows `4820.50` as `$4,820.50`, and a timestamp as a local time. |
+| `format.ts`                     | Shows `4820.50` as `$4,820.50`.                                 |
 
 `App.tsx` hands what it remembers to the components in `components/`, one for
 each part of the page:
@@ -205,8 +204,7 @@ each part of the page:
 | `PageHeader`      | The title and the reset button.                                      |
 | `AccountsSection` | The balances, in an `AccountsTable`.                                 |
 | `UploadSection`   | The `UploadForm` (file picker and button) and the `UploadResult` of the last upload. |
-| `HistorySection`  | Every transfer from every uploaded file.                             |
-| `TransfersTable`  | A table of transfers, used by the upload result and by the history.  |
+| `TransfersTable`  | The table of transfers inside the upload result.                     |
 
 The page holds no business rules. It never decides whether a transfer is
 allowed or works out a balance: it shows what the API returns. Balances stay

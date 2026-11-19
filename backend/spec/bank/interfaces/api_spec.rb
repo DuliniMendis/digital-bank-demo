@@ -38,11 +38,6 @@ RSpec.describe Bank::Interfaces::Api, :database do
     body['accounts'].to_h { |account| [account['number'], account['balance']] }
   end
 
-  def history
-    get '/api/transfers'
-    body['transfers']
-  end
-
   let(:pay_one_hundred) { "1111234522226789,1212343433335665,100.00\n" }
 
   describe 'GET /api/accounts' do
@@ -116,22 +111,6 @@ RSpec.describe Bank::Interfaces::Api, :database do
     end
   end
 
-  describe 'GET /api/transfers' do
-    before { post_transfers("#{pay_one_hundred}1111234522226789,9999999999999999,1.00\n") }
-
-    it 'lists a completed transfer with the time of the upload' do
-      expect(history.first).to include(
-        'line' => 1, 'amount' => '100.00', 'status' => 'completed', 'uploaded_at' => /\A\d{4}-\d\d-\d\dT/
-      )
-    end
-
-    it 'lists a rejected transfer with the reason' do
-      expect(history.last).to include(
-        'line' => 2, 'status' => 'rejected', 'reason' => 'account 9999999999999999 does not exist'
-      )
-    end
-  end
-
   describe 'POST /api/reset' do
     before do
       post_transfers(pay_one_hundred)
@@ -140,10 +119,6 @@ RSpec.describe Bank::Interfaces::Api, :database do
 
     it 'puts the balances back to the balances file' do
       expect(balances['1111234522226789']).to eq('5000.00')
-    end
-
-    it 'empties the history' do
-      expect(history).to be_empty
     end
   end
 
