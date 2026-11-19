@@ -114,7 +114,7 @@ A posted transfers file goes through the layers like this:
 ### Storage
 
 The use cases never talk to the database directly. They are handed a
-*repository*, `PostgresAccountRepository`, which adds, finds and saves
+*repository*, `AccountRepository`, which adds, finds and saves
 accounts in the `accounts` table:
 
 | Column          | Meaning                                                      |

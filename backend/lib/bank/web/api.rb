@@ -17,7 +17,7 @@ module Bank
     class Api < Sinatra::Base
       # Tells the app which database to use. Called once, at startup.
       def self.start(database:)
-        set :accounts, Infrastructure::PostgresAccountRepository.new(database)
+        set :accounts, Infrastructure::AccountRepository.new(database)
       end
 
       get '/accounts' do

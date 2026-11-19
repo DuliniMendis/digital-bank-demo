@@ -23,7 +23,7 @@ RSpec.describe Bank::Web::Api, :database do
   end
 
   def seed(path)
-    accounts = Bank::Infrastructure::PostgresAccountRepository.new(database)
+    accounts = Bank::Infrastructure::AccountRepository.new(database)
     rows = Bank::Infrastructure::CsvFiles.opening_balances(File.read(path))
     Bank::UseCases::SeedAccounts.new(accounts: accounts).call(rows)
   end

@@ -15,7 +15,7 @@ sample_balances = File.expand_path('../spec/fixtures/account_balances.csv', __di
 balances_file = ENV.fetch('BALANCES_FILE', sample_balances)
 
 database = Bank::Infrastructure::Database.from_environment
-accounts = Bank::Infrastructure::PostgresAccountRepository.new(database)
+accounts = Bank::Infrastructure::AccountRepository.new(database)
 opening_balances = Bank::Infrastructure::CsvFiles.opening_balances(File.read(balances_file))
 
 # A bad line in the file stops the seeding, and whatever the database held

@@ -6,7 +6,7 @@
 RSpec.describe Bank::UseCases::ProcessTransfers, :database do
   subject(:process_transfers) { described_class.new(accounts: accounts) }
 
-  let(:accounts) { Bank::Infrastructure::PostgresAccountRepository.new(database) }
+  let(:accounts) { Bank::Infrastructure::AccountRepository.new(database) }
   let(:alice) { '1111234522226789' }
   let(:bob) { '1212343433335665' }
   let(:stranger) { '9999999999999999' }
