@@ -1,0 +1,81 @@
+# Notes for agents
+
+Read this before changing anything. It holds what the code and the README do
+not show: how the branches are used, what the owner has decided, and what to
+leave alone. How to run and test the app is in `README.md`.
+
+This is the version of these notes for the `main` branch. The `extended`
+branch has its own, which also covers the database, the web page and the
+live demo.
+
+## What this project is
+
+A take-home banking challenge that was then extended into a small full app.
+Every line has to be easy to explain, so simple code matters more here than
+clever code.
+
+## Branches
+
+- **`main` is the submission.** It is the simplest version that answers the
+  brief: domain, CSV import, application services, in-memory storage and a
+  small Sinatra server. It has no database, no locking and no web page, on
+  purpose.
+- **`extended` holds everything beyond the brief**: Postgres, the `/api`
+  routes, the React page and the Vercel deployment.
+- **Extension work never goes into `main`.** Its pull requests target
+  `extended`.
+- **Changes to `main` reach `extended` through a pull request of their own**
+  that only merges `main` into `extended`. Keeping that separate stops a
+  feature pull request from showing changes that were already reviewed.
+- **The two branches lay their files out differently.** `main` keeps the
+  Ruby app at the repository root. `extended` keeps it in `backend/`, because
+  it has `frontend/` beside it. Do not add a `backend/` folder here.
+- **Each branch has its own `AGENTS.md`.** In a merge of `main` into
+  `extended`, keep the one on `extended`.
+
+## Working with the owner
+
+- **One pull request per piece of work, then stop.** Do not merge a pull
+  request without the owner saying so for that pull request. The one
+  exception is a pull request that only merges `main` into `extended`.
+- **Re-read a pull request's base branch right before merging it.** GitHub
+  deletes a merged branch and points the pull requests stacked on it at the
+  branch below, so the base can change while you work.
+- **Do not add code or specs nobody asked for.** Suggest them first.
+- **Report what was not checked.** Say plainly when something was only
+  covered by tests, or not run at all.
+
+## Things that must stay out of the repository
+
+- **The original brief and its two sample CSV files.** Never commit them.
+- **The name of the company that set the challenge.** It must not appear in
+  code, documentation, branch names or project names.
+
+## Code conventions
+
+- **Keep Ruby plain.** Prefer fewer classes and files. Do not wrap a class in
+  another class that has only one caller.
+- **Layers follow Domain-Driven Design**: `domain`, `application`,
+  `infrastructure`, `interfaces`. Write "application service", not "use
+  case".
+- **Money is whole cents inside the code and text in JSON.** Never a float.
+- **Each rule lives in one place.** A broken rule raises a `Domain::Error`.
+- **Do not write a spec that is harder to explain than the risk it guards.**
+  Say the behaviour is untested instead.
+
+## Comments
+
+- Write full sentences that tell the reader something the code does not: a
+  reason, a consequence, or a surprising behaviour.
+- Do not restate a name, and do not explain Ruby or a library.
+- Do not name another file's path, another class, or a list that is defined
+  elsewhere. Such comments go stale when the other thing changes.
+- Aim for one to three sentences. Fragments such as "Sixteen digits." are too
+  short to be useful.
+
+## Sharing this machine
+
+- **Other sessions may use the same checkout** and switch its branch. Check
+  the branch before committing, or work in a git worktree.
+- **Check a port is free before starting a server on it**, and stop only the
+  process you started.
