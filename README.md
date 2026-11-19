@@ -28,8 +28,8 @@ To run it (requires Ruby 4.0, see `backend/.ruby-version`):
 
 ```bash
 cd backend
-bundle install                       # once, like `npm install`
-bundle exec rake spec:integration
+bundle install
+bundle exec rspec spec/integration
 ```
 
 A transfer that cannot be applied is rejected with a reason, for example
@@ -125,17 +125,11 @@ same number are the same account, whatever their balance.
 
 ## Running the backend checks
 
-The tasks are defined in `backend/Rakefile`. Rake is Ruby's task runner, like
-the `scripts` section of a `package.json`.
-
 ```bash
 cd backend
-bundle exec rake                    # style check, then every spec
-bundle exec rake spec               # every spec
-bundle exec rake spec:integration   # only the sample files spec
-bundle exec rake lint               # style check only
-bundle exec rake -T                 # list all tasks
+bundle exec rspec     # tests
+bundle exec rubocop   # style checks
 ```
 
-GitHub Actions runs `rake lint` and `rake spec` on every pull request
+The same two commands run in GitHub Actions on every pull request
 (`.github/workflows/ci.yml`).

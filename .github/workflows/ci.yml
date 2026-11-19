@@ -24,9 +24,8 @@ jobs:
           working-directory: backend
           bundler-cache: true
 
-      # The tasks are defined in backend/Rakefile.
       - name: Lint
-        run: bundle exec rake lint
+        run: bundle exec rubocop
 
       - name: Test
-        run: bundle exec rake spec
+        run: bundle exec rspec
