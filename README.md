@@ -35,9 +35,9 @@ To see the balances at any time:
 curl http://localhost:9292/accounts
 ```
 
-Neither CSV file has a header row. A balances line is `account number,balance`
-and a transfers line is `from,to,amount`. Sample files are in
-`backend/spec/fixtures/`.
+A header row is optional in both CSV files. A balances line is
+`account number,balance` and a transfers line is `from,to,amount`. Sample
+files are in `backend/spec/fixtures/`.
 
 Balances carry over from one post to the next, and reset when the server
 restarts.

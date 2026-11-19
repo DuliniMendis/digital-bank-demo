@@ -4,9 +4,9 @@ require 'csv'
 
 module Bank
   module Infrastructure
-    # Reads the two CSV files. Neither file has a header row, and blank lines
-    # are skipped. The fields are passed on as plain text, because checking
-    # that they are valid is the job of the domain.
+    # Reads the two CSV files. A header row is optional, and blank lines are
+    # skipped. The fields are passed on as plain text, because checking that
+    # they are valid is the job of the domain.
     module CsvFiles
       BYTE_ORDER_MARK = "\uFEFF"
 
@@ -24,17 +24,27 @@ module Bank
         end
       end
 
-      # Returns [line number, fields] for every line that is not blank.
+      # Returns [line number, fields] for every line of data.
       #
-      # Blank lines are kept while the lines are numbered (`skip_blanks:
-      # false`) and only dropped afterwards. That way the numbers match the
-      # original file, and an error message can point at the right line.
+      # Blank lines and a header are kept while the lines are numbered
+      # (`skip_blanks: false`) and only dropped afterwards. That way the
+      # numbers match the original file, and an error message can point at
+      # the right line.
       def self.rows(text)
         lines = CSV.parse(as_utf8(text), skip_blanks: false)
         numbered = lines.each_with_index.map { |fields, index| [index + 1, fields] }
-        numbered.reject { |_line, fields| fields.compact.empty? }
+        rows = numbered.reject { |_line, fields| fields.compact.empty? }
+        header?(rows.first) ? rows.drop(1) : rows
       end
-      private_class_method :rows
+
+      # Every line of data starts with an account number, so a first line
+      # that starts with a word and has no digits in it is taken to be a
+      # header. A mistyped account number still has digits in it, so it is
+      # kept and reported as a bad line instead of being quietly skipped.
+      def self.header?(row)
+        first_field = row&.last&.first.to_s.strip
+        !first_field.empty? && !first_field.match?(/\d/)
+      end
 
       # An uploaded file arrives as raw bytes, with nothing to say which
       # encoding they are in. This reads them as UTF-8 and replaces any byte
@@ -47,7 +57,7 @@ module Bank
       def self.as_utf8(text)
         text.dup.force_encoding(Encoding::UTF_8).scrub.delete_prefix(BYTE_ORDER_MARK)
       end
-      private_class_method :as_utf8
+      private_class_method :rows, :header?, :as_utf8
     end
   end
 end
