@@ -4,6 +4,10 @@ This is small banking service that uses Ruby. It loads account balances for one 
 file, then applies a day's transfers from a second CSV file. A transfer that
 would take the sending account below $0 is rejected.
 
+**A hosted version is at <https://digital-bank-demo-flame.vercel.app>.** It
+runs the `extended` branch, which adds a web page and a database to what is
+described here.
+
 ## Running it
 
 Requires Ruby 3.3 or newer.
@@ -11,7 +15,6 @@ Requires Ruby 3.3 or newer.
 Start the server:
 
 ```bash
-cd backend
 bundle install
 bundle exec rackup
 ```
@@ -26,7 +29,7 @@ BALANCES_FILE=path/to/balances.csv bundle exec rackup
 A bad line in the balances file stops the server from starting, and an error
 with the line number would indicate what the issue was.
 
-From a second terminal, in `backend/`, post a day's transfers:
+From a second terminal, post a day's transfers:
 
 ```bash
 curl -F file=@spec/fixtures/transfers.csv http://localhost:9292/transfers
@@ -43,21 +46,28 @@ curl http://localhost:9292/accounts
 
 A header row is optional in both CSV files. A row in the CSV for balances include
 `account number,balance` and a a row in the CSV for transfers include `from,to,amount`. Sample
-files are in `backend/spec/fixtures/`.
+files are in `spec/fixtures/`.
 
 Balances are only reset when the server restarts.
 
 ## Running the tests
 
+Run `bundle install` first if you have not started the server yet.
+
 ```bash
-cd backend
-bundle exec rspec
-bundle exec rubocop
+bundle exec rspec       # the specs
+bundle exec rubocop     # the linter
+```
+
+To run the specs in one file, name it:
+
+```bash
+bundle exec rspec spec/bank/domain/money_spec.rb
 ```
 
 ## Architecture
 
-The code is in `backend/lib/bank/` and follows Domain-Driven Design. It has
+The code is in `lib/bank/` and follows Domain-Driven Design. It has
 four layers, and each one only depends on the ones above it in this table.
 
 | Layer             | What it does                                                                |
@@ -112,3 +122,67 @@ Locking was left out of this branch on purpose. The server here can handle
 two requests at once, so two uploads arriving at the same moment could both
 spend the same balance. A database solves that properly with transactions and
 row locks.
+
+### Running the extended branch
+
+**The extended branch is hosted at <https://digital-bank-demo-flame.vercel.app>.
+Use that to test it without installing anything.**
+
+To run it yourself instead, it requires Node 26 and a running Postgres as well as Ruby. On that branch the
+Ruby code is in `backend/` and the web page is in `frontend/`.
+
+Switch to the branch, then create a database and seed it with the sample
+balances. Creating and seeding are done once:
+
+```bash
+git switch extended
+cd backend
+bundle install
+createdb bank_development
+DATABASE_URL=postgres://localhost/bank_development bundle exec ruby db/seed.rb
+```
+
+Start the API, which listens on `http://localhost:9292`:
+
+```bash
+DATABASE_URL=postgres://localhost/bank_development bundle exec rackup
+```
+
+Start the web page from a second terminal, then open `http://localhost:5173`:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+The Ruby specs and the linter need an empty database called `bank_test`:
+
+```bash
+cd backend
+createdb bank_test      # once
+bundle exec rspec
+bundle exec rubocop
+```
+
+The web page has its own tests and linter, which need neither the API nor a
+database:
+
+```bash
+cd frontend
+npm test
+npm run lint
+```
+
+The end-to-end tests open the page in a real browser against the real API and
+a database of their own. They start the API and the page themselves, so
+nothing else needs to be running:
+
+```bash
+cd frontend
+createdb bank_e2e                     # once
+npx playwright install chromium       # once: downloads the browser
+npm run e2e
+```
+
+The README on the `extended` branch explains each of these in more detail.

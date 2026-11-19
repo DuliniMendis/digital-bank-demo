@@ -15,11 +15,8 @@ jobs:
     strategy:
       matrix:
         # The oldest Ruby the Gemfile allows, and the one the code is
-        # developed on, which is read from backend/.ruby-version.
+        # developed on, which is read from .ruby-version.
         ruby: ['3.3', '.ruby-version']
-    defaults:
-      run:
-        working-directory: backend
     steps:
       - uses: actions/checkout@v5
 
@@ -27,7 +24,6 @@ jobs:
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
-          working-directory: backend
           bundler-cache: true
 
       - name: Lint
