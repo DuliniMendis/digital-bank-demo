@@ -4,6 +4,10 @@ This is small banking service that uses Ruby. It loads account balances for one 
 file, then applies a day's transfers from a second CSV file. A transfer that
 would take the sending account below $0 is rejected.
 
+**A hosted version is at <https://digital-bank-demo-flame.vercel.app>.** It
+runs the `extended` branch, which adds a web page and a database to what is
+described here.
+
 ## Running it
 
 Requires Ruby 3.3 or newer.
