@@ -13,6 +13,8 @@ balances_file = ENV.fetch('BALANCES_FILE') do
   abort 'Set BALANCES_FILE to the path of the account balances CSV file.'
 end
 
+abort "BALANCES_FILE is #{balances_file}, which is not a file." unless File.file?(balances_file)
+
 Bank::Web::Api.load_balances(balances_file)
 
 run Bank::Web::Api
