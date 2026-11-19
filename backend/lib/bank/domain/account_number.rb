@@ -2,7 +2,10 @@
 
 module Bank
   module Domain
-    # Sixteen digits. Checked once here, so nothing else has to check it.
+    # AccountNumber identifies an account. It is always exactly 16 digits.
+    #
+    # An AccountNumber that exists is always valid.
+    # The rest of the code never has to re-check the format.
     AccountNumber = Data.define(:value) do
       def initialize(value:)
         digits = value.to_s.strip

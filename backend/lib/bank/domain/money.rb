@@ -2,8 +2,7 @@
 
 module Bank
   module Domain
-    # An amount of money, held as whole cents. Floats can't represent every
-    # cent exactly (0.1 + 0.2 != 0.3); integers can. Never negative.
+    # An amount of money, held as whole cents.
     Money = Data.define(:cents) do
       # Parses "25.60", "500" or "5.2" (read as $5.20). More than two decimal
       # places is rejected instead of rounded, because rounding would quietly
@@ -18,7 +17,8 @@ module Bank
         new(cents: to_cents(dollars: match[1], decimals: match[2]))
       end
 
-      # decimals is "6" for 60 cents, "60" for the same, or nil for none.
+      # Turns the two halves of "25.6" into 2560 cents.
+      # A single digit decimal is padded to the right (ex: 25.6 considered as 25.60)
       def self.to_cents(dollars:, decimals:)
         (dollars.to_i * 100) + decimals.to_s.ljust(2, '0').to_i
       end
@@ -46,7 +46,6 @@ module Bank
         cents.zero?
       end
 
-      # "1234.50"
       def to_s
         format('%<dollars>d.%<cents>02d', dollars: cents / 100, cents: cents % 100)
       end
