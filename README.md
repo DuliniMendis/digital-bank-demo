@@ -190,11 +190,11 @@ and the seed command both run when they start.
 The page is a small React app in `frontend/src/`, written in TypeScript and
 built with Vite.
 
-| File                            | What it does                                                    |
-|---------------------------------|-----------------------------------------------------------------|
-| `api.ts`                        | Every call to the API. No other file uses `fetch`.              |
-| `App.tsx`                       | The page: what it remembers, what each button does, and the order of its sections. |
-| `format.ts`                     | Shows `4820.50` as `$4,820.50`.                                 |
+| File            | What it does                                                                       |
+|-----------------|------------------------------------------------------------------------------------|
+| `App.tsx`       | The page: what it remembers, what each button does, and the order of its sections. |
+| `lib/api.ts`    | Every call to the API. No other file uses `fetch`.                                 |
+| `lib/format.ts` | Shows `4820.50` as `$4,820.50`.                                                    |
 
 `App.tsx` hands what it remembers to the components in `components/`, one for
 each part of the page:

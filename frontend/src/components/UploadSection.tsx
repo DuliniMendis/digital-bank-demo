@@ -1,4 +1,4 @@
-import type { Transfer } from '../api'
+import type { Transfer } from '../lib/api'
 import { UploadForm } from './UploadForm'
 import { UploadResult } from './UploadResult'
 

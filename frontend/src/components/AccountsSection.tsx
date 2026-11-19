@@ -1,4 +1,4 @@
-import type { Account } from '../api'
+import type { Account } from '../lib/api'
 import { AccountsTable } from './AccountsTable'
 
 type Props = {
