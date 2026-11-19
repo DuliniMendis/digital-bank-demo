@@ -1,5 +1,9 @@
 # frozen_string_literal: true
 
+# Tells Sinatra this is a test run. In its default development mode it only
+# accepts requests addressed to localhost, which the test client is not.
+ENV['APP_ENV'] = 'test'
+
 require 'bank'
 
 RSpec.configure do |config|
