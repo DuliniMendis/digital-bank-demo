@@ -51,6 +51,13 @@ RSpec.shared_examples 'an account repository' do
     expect(repository.find(number).balance).to eq(money(1500))
   end
 
+  it 'forgets every account when cleared' do
+    repository.add(account)
+    repository.clear
+
+    expect(repository.all).to be_empty
+  end
+
   it 'runs the block given to transaction' do
     expect { |block| repository.transaction(&block) }.to yield_control
   end

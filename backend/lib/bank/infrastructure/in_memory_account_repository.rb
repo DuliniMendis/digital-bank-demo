@@ -34,6 +34,10 @@ module Bank
         @accounts.values
       end
 
+      def clear
+        @accounts.clear
+      end
+
       # There is no database to undo anything, so this only runs the block.
       def transaction
         yield

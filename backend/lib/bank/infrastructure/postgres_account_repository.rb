@@ -40,6 +40,10 @@ module Bank
         @table.order(:id).map { |row| to_account(row) }
       end
 
+      def clear
+        @table.delete
+      end
+
       # Everything inside the block is saved together. If the block raises
       # an error, the database undoes all of it. The `&` passes the caller's
       # block straight on to Sequel.
