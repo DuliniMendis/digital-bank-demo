@@ -3,7 +3,7 @@
 require 'rack/test'
 require 'stringio'
 
-RSpec.describe Bank::Web::Api do
+RSpec.describe Bank::Web::Api, :database do
   include Rack::Test::Methods
 
   # Rack::Test sends its requests to whatever `app` returns.
@@ -11,9 +11,13 @@ RSpec.describe Bank::Web::Api do
     described_class
   end
 
-  # Loading the balances again before each example gives every example the
-  # same starting point, as if the server had just been started.
-  before { described_class.load_balances(fixture_path('account_balances.csv')) }
+  # Every example begins with an empty database, so starting the app loads
+  # the balances file, as it does the first time the server is started.
+  before { start_app }
+
+  def start_app
+    described_class.start(database: database, balances_file: fixture_path('account_balances.csv'))
+  end
 
   def fixture_path(name)
     File.expand_path("../../fixtures/#{name}", __dir__)
@@ -21,9 +25,9 @@ RSpec.describe Bank::Web::Api do
 
   # Uploads the CSV text as a file in a form field called "file", the same
   # way `curl -F file=@transfers.csv` does.
-  def post_transfers(csv_text)
+  def post_transfers(csv_text, **fields)
     file = Rack::Test::UploadedFile.new(StringIO.new(csv_text), 'text/csv', original_filename: 'transfers.csv')
-    post '/transfers', file: file
+    post '/api/transfers', file: file, **fields
   end
 
   def body
@@ -31,18 +35,26 @@ RSpec.describe Bank::Web::Api do
   end
 
   def balances
+    get '/api/accounts'
     body['accounts'].to_h { |account| [account['number'], account['balance']] }
   end
 
-  describe 'GET /accounts' do
+  def history
+    get '/api/transfers'
+    body['transfers']
+  end
+
+  let(:pay_one_hundred) { "1111234522226789,1212343433335665,100.00\n" }
+
+  describe 'GET /api/accounts' do
     it 'lists the balances loaded at startup' do
-      get '/accounts'
+      get '/api/accounts'
 
       expect(body['accounts'].first).to eq('number' => '1111234522226789', 'balance' => '5000.00')
     end
   end
 
-  describe 'POST /transfers' do
+  describe 'POST /api/transfers' do
     context 'with the sample transfers file' do
       let(:expected_balances) do
         {
@@ -74,14 +86,15 @@ RSpec.describe Bank::Web::Api do
       )
     end
 
-    it 'keeps the balances between one post and the next' do
-      2.times { post_transfers("1111234522226789,1212343433335665,100.00\n") }
+    it 'keeps the balances between one file and the next' do
+      post_transfers(pay_one_hundred)
+      post_transfers("1111234522226789,1212343433335665,50.00\n")
 
-      expect(balances['1111234522226789']).to eq('4800.00')
+      expect(balances['1111234522226789']).to eq('4850.00')
     end
 
     it 'answers 400 when no file is sent' do
-      post '/transfers'
+      post '/api/transfers'
 
       expect(last_response.status).to eq(400)
     end
@@ -93,29 +106,73 @@ RSpec.describe Bank::Web::Api do
     end
   end
 
-  describe 'two files arriving at the same time' do
-    # A stand-in for ProcessTransfers that takes a moment to run, and records
-    # whether a second call started while an earlier one was still running.
-    let(:slow_processor) do
-      Class.new do
-        attr_reader :overlapped
+  describe 'posting the same transfers file twice' do
+    before { post_transfers(pay_one_hundred) }
 
-        def call(_requests)
-          @overlapped ||= @busy
-          @busy = true
-          sleep 0.05
-          @busy = false
-          []
-        end
-      end.new
+    it 'answers 409 and says the file was already applied' do
+      post_transfers(pay_one_hundred)
+
+      expect([last_response.status, body['error']]).to match([409, /already been applied/])
     end
 
-    it 'are processed one after the other' do
-      allow(Bank::UseCases::ProcessTransfers).to receive(:new).and_return(slow_processor)
+    it 'does not move the money a second time' do
+      post_transfers(pay_one_hundred)
 
-      Array.new(2) { Thread.new { post_transfers('') } }.each(&:join)
+      expect(balances['1111234522226789']).to eq('4900.00')
+    end
 
-      expect(slow_processor.overlapped).to be_falsy
+    it 'applies it again when apply_again is true' do
+      post_transfers(pay_one_hundred, apply_again: 'true')
+
+      expect(balances['1111234522226789']).to eq('4800.00')
+    end
+  end
+
+  describe 'GET /api/transfers' do
+    before { post_transfers("#{pay_one_hundred}1111234522226789,9999999999999999,1.00\n") }
+
+    it 'lists a completed transfer with the time of the upload' do
+      expect(history.first).to include(
+        'line' => 1, 'amount' => '100.00', 'status' => 'completed', 'uploaded_at' => /\A\d{4}-\d\d-\d\dT/
+      )
+    end
+
+    it 'lists a rejected transfer with the reason' do
+      expect(history.last).to include(
+        'line' => 2, 'status' => 'rejected', 'reason' => 'account 9999999999999999 does not exist'
+      )
+    end
+  end
+
+  describe 'POST /api/reset' do
+    before do
+      post_transfers(pay_one_hundred)
+      post '/api/reset'
+    end
+
+    it 'puts the balances back to the balances file' do
+      expect(balances['1111234522226789']).to eq('5000.00')
+    end
+
+    it 'empties the history, so the same file can be applied again' do
+      expect(history).to be_empty
+    end
+  end
+
+  describe 'starting the server again' do
+    it 'keeps the balances the database already holds' do
+      post_transfers(pay_one_hundred)
+      start_app
+
+      expect(balances['1111234522226789']).to eq('4900.00')
+    end
+  end
+
+  describe 'an address that does not exist' do
+    it 'answers 404 with a JSON error' do
+      get '/api/nothing'
+
+      expect([last_response.status, body]).to match([404, { 'error' => a_string_including('nothing') }])
     end
   end
 end
