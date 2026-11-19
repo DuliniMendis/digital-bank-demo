@@ -15,6 +15,12 @@ module Bank
     # The account was built without a proper account number or balance.
     class InvalidAccount < Error; end
 
+    # An account with this number has already been added.
+    class DuplicateAccount < Error; end
+
+    # No account exists with this number.
+    class UnknownAccount < Error; end
+
     # A withdrawal would take the account balance below $0.
     class InsufficientFunds < Error; end
 

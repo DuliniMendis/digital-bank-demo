@@ -25,12 +25,19 @@ module Bank
       # InvalidMoney. Dropping or rounding the extra digits would silently
       # change the amount, so it is safer to refuse.
       def self.parse(text)
-        match = /\A(\d+)(?:\.(\d{1,2}))?\z/.match(text.to_s.strip)
+        cleaned = text.to_s.strip
+        raise InvalidMoney, 'amount is missing' if cleaned.empty?
+
+        match = /\A(\d+)(?:\.(\d{1,2}))?\z/.match(cleaned)
         raise InvalidMoney, "#{text.inspect} is not a valid amount" unless match
 
-        dollars = match[1].to_i
-        cents = match[2].to_s.ljust(2, '0').to_i
-        new(cents: (dollars * 100) + cents)
+        new(cents: to_cents(dollars: match[1], decimals: match[2]))
+      end
+
+      # Turns the two halves of "25.6" into 2560 cents. The decimals may be
+      # missing ("25") and are padded on the right, so "6" means 60 cents.
+      def self.to_cents(dollars:, decimals:)
+        (dollars.to_i * 100) + decimals.to_s.ljust(2, '0').to_i
       end
 
       def self.zero
