@@ -100,8 +100,6 @@ branch builds on it with the things a real service would need:
   memory and go back to the balances file each time the server starts.
 - **A history of every transfer.** One row is kept for each line of every
   uploaded file, whether it completed or was rejected.
-- **Protection against applying the same file twice.** A file whose contents
-  have been seen before is refused unless the sender confirms.
 - **Locking, so uploads that arrive together are safe.** Each transfer runs
   in a database transaction that locks the two accounts it touches, and each
   upload takes a lock for the whole file. Two uploads cannot both spend the
