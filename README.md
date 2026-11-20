@@ -50,6 +50,10 @@ files are in `spec/fixtures/`.
 
 Balances are only reset when the server restarts.
 
+Nothing stops the same transfers file being posted twice, and that is on
+purpose. A second post is applied as a second set of transfers, because two
+files with the same lines can both be genuine.
+
 ## Running the tests
 
 Run `bundle install` first if you have not started the server yet.
