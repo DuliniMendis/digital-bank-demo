@@ -119,6 +119,18 @@ test('uploading a file shows each transfer and the new balances', async () => {
   expect(section('Accounts').getByText('$4,500.00')).toBeInTheDocument()
   expect(screen.getByText('Completed')).toBeInTheDocument()
   expect((uploadsSent[0].get('file') as File).name).toBe('transfers.csv')
+  expect(uploadsSent[0].get('settle_at_end')).toBeNull()
+})
+
+test('ticking the box asks the server to settle at the end', async () => {
+  render(<App />)
+  await screen.findByText('$5,000.00')
+
+  await userEvent.setup().click(screen.getByLabelText('Check balances only at the end of the file'))
+  await uploadFile()
+
+  await screen.findByText('The file contained no transfers.')
+  expect(uploadsSent[0].get('settle_at_end')).toBe('true')
 })
 
 test('a rejected transfer is shown with the reason', async () => {

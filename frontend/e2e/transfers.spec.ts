@@ -57,3 +57,18 @@ test('a sample picked from the list does what its name says', async ({ page }) =
   await expect(page.getByText('6 transfers: 0 completed, 6 rejected.')).toBeVisible()
   await expect(accounts(page).getByText('$5,000.00')).toBeVisible()
 })
+
+// The first line sends $600.00 from an account that holds $550.00, and the
+// second line pays that account $100.00. Line by line the first is rejected.
+test('with the box ticked, a transfer can spend money that arrives later in the file', async ({ page }) => {
+  await page.getByLabel('Check balances only at the end of the file').check()
+  await upload(page, {
+    name: 'later-line-pays.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from('2222123433331212,1212343433335665,600.00\n1212343433335665,2222123433331212,100.00\n'),
+  })
+
+  await expect(page.getByText('2 transfers: 2 completed, 0 rejected.')).toBeVisible()
+  await expect(accounts(page).getByText('$50.00')).toBeVisible()
+  await expect(accounts(page).getByText('$1,700.00')).toBeVisible()
+})

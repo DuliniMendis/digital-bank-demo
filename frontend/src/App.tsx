@@ -17,6 +17,10 @@ export default function App() {
   // The names of the sample files the API offers.
   const [samples, setSamples] = useState<string[]>([])
 
+  // Whether the tick box is ticked. It applies to the next file sent,
+  // whether that is one from the computer or a sample.
+  const [settleAtEnd, setSettleAtEnd] = useState(false)
+
   // The transfers from the most recent upload, or null before any upload.
   // They are only kept here, so they are gone when the page is reloaded.
   const [results, setResults] = useState<Transfer[] | null>(null)
@@ -52,7 +56,7 @@ export default function App() {
     setBusy(busyAs)
     setError(null)
     try {
-      const result = await postTransfers(await getFile())
+      const result = await postTransfers(await getFile(), settleAtEnd)
       setResults(result.transfers)
       setAccounts(result.accounts)
     } catch (caught) {
@@ -102,6 +106,8 @@ export default function App() {
         disabled={busy !== null}
         results={results}
         samples={samples}
+        settleAtEnd={settleAtEnd}
+        onSettleAtEndChange={setSettleAtEnd}
         onUpload={upload}
         onApplySample={applySample}
       />

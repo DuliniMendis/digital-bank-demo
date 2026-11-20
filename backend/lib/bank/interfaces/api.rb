@@ -14,6 +14,9 @@ module Bank
     #   GET  /api/samples         the names of the sample transfers files
     #   GET  /api/samples/:name   one sample transfers file, as a download
     #
+    # Adding the form field `settle_at_end=true` to an upload checks the
+    # balances once, after the whole file, and not after every line.
+    #
     # The accounts are kept in Postgres, so balances are still there after
     # the server restarts. The server never loads balances when it starts:
     # the database is filled by seeding it.
@@ -93,7 +96,8 @@ module Bank
         end
 
         def process(requests)
-          Application::ProcessTransfers.new(accounts: settings.accounts).call(requests)
+          Application::ProcessTransfers.new(accounts: settings.accounts)
+                                       .call(requests, settle_at_end: params[:settle_at_end] == 'true')
         end
 
         # Balances are sent as strings such as "4820.50". A JSON number would
