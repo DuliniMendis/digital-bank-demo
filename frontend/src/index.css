@@ -100,6 +100,32 @@ h3 {
   color: var(--muted);
 }
 
+.loading {
+  margin: 0;
+  color: var(--accent-strong);
+}
+
+/* A ring with one quarter left out, which is what makes the turning
+   visible. It takes the colour of the text it sits in, so it is purple
+   beside the accounts and white on the purple button. */
+.spinner {
+  display: inline-block;
+  width: 0.9em;
+  height: 0.9em;
+  margin-right: 8px;
+  vertical-align: -0.1em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* Tables. The wrapper lets a wide table scroll sideways on a phone without
    making the whole page scroll. */
 

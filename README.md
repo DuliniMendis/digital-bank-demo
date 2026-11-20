@@ -220,6 +220,7 @@ each part of the page:
 | `AccountsSection` | The balances, in an `AccountsTable`.                                 |
 | `UploadSection`   | The `UploadForm` (file picker and button) and the `UploadResult` of the last upload. |
 | `TransfersTable`  | The table of transfers inside the upload result.                     |
+| `Spinner`         | The turning ring shown while the page waits for the API.             |
 
 The page holds no business rules. It never decides whether a transfer is
 allowed or works out a balance: it shows what the API returns. Balances stay

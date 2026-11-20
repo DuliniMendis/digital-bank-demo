@@ -1,5 +1,6 @@
 import type { Account } from '../lib/api'
 import { AccountsTable } from './AccountsTable'
+import { Spinner } from './Spinner'
 
 type Props = {
   accounts: Account[]
@@ -13,7 +14,12 @@ export function AccountsSection({ accounts, loading, errorShown }: Props) {
   return (
     <section aria-labelledby="accounts-heading">
       <h2 id="accounts-heading">Accounts</h2>
-      {loading && <p className="empty">Loading…</p>}
+      {loading && (
+        <p role="status" className="loading">
+          <Spinner />
+          Loading the accounts…
+        </p>
+      )}
       {!loading && accounts.length > 0 && <AccountsTable accounts={accounts} />}
       {/* The server never loads balances by itself, so a new database has no
           accounts until it is seeded. The reset button does that. */}

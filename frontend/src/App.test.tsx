@@ -134,6 +134,49 @@ test('an error from the server is shown', async () => {
   expect(await screen.findByRole('alert')).toHaveTextContent('The file is not valid CSV: unclosed quote')
 })
 
+test('a loader is shown until the accounts arrive', async () => {
+  render(<App />)
+
+  expect(screen.getByRole('status')).toHaveTextContent('Loading the accounts…')
+
+  await screen.findByText('$5,000.00')
+  expect(screen.queryByRole('status')).not.toBeInTheDocument()
+})
+
+test('a server that cannot be reached is reported', async () => {
+  // `fetch` fails like this when there is no connection at all.
+  vi.stubGlobal('fetch', vi.fn(() => Promise.reject(new TypeError('Failed to fetch'))))
+  render(<App />)
+
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    'The accounts could not be loaded. The server could not be reached.',
+  )
+})
+
+test('an error with no message from the server shows the status', async () => {
+  server.reset = { status: 500, body: null }
+  render(<App />)
+  await screen.findByText('$5,000.00')
+
+  await userEvent.setup().click(screen.getByRole('button', { name: 'Reset to opening balances' }))
+
+  expect(await screen.findByRole('alert')).toHaveTextContent('The reset failed. The server answered with status 500.')
+})
+
+test('an error goes away when the next attempt works', async () => {
+  server.upload = { status: 400, body: { error: 'The file is not valid CSV: unclosed quote' } }
+  render(<App />)
+  await screen.findByText('$5,000.00')
+  const user = await uploadFile()
+  await screen.findByRole('alert')
+
+  server.upload = { status: 200, body: { transfers: [completed], accounts: afterTransfer } }
+  await user.click(screen.getByRole('button', { name: 'Apply transfers' }))
+
+  expect(await screen.findByText('1 transfer: 1 completed, 0 rejected.')).toBeInTheDocument()
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+})
+
 test('a database with no accounts says how to load them', async () => {
   server.accounts = { status: 200, body: { accounts: [] } }
   render(<App />)
