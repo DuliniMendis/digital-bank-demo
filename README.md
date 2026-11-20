@@ -105,6 +105,13 @@ A few decisions shape the code:
   starting balances have to be trustworthy, so loading the entire balances
   file is aborted if one of the balances is wrong. A bad transfer line is one
   rejected transfer, so the other transfer rows are still processed.
+- **Transfers are applied one at a time, in the order of the file.** Each
+  transfer sees the balances left by the ones before it. An early transfer
+  can complete and a later one from the same account be rejected, because
+  the money has already gone. In the same way, money that arrives early in
+  the file can be spent later in it. Putting the lines in a different order
+  can therefore change which ones are rejected. The edge-case fixture
+  `3_completed_3_rejected_overdraft_limit.csv` shows both cases.
 
 ## Extensions
 
