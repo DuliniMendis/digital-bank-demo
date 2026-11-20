@@ -14,9 +14,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # The oldest Ruby the Gemfile allows, and the one the code is
-        # developed on, which is read from .ruby-version.
-        ruby: ['3.3', '.ruby-version']
+        # The oldest Ruby the Gemfile allows, and the newest release line
+        # the code is developed on.
+        ruby: ['3.3', '4.0']
     steps:
       - uses: actions/checkout@v5
 
