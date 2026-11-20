@@ -17,7 +17,7 @@ RSpec.describe Bank::Interfaces::Api, :database do
     described_class.start(
       database: database,
       balances_file: fixture_path('account_balances.csv'),
-      sample_files: [fixture_path('transfers.csv'), fixture_path('edge_cases/all_rejected_bad_amounts.csv')]
+      sample_files: [fixture_path('transfers.csv'), fixture_path('edge_cases/all_rejected_wrong_columns.csv')]
     )
     described_class.reseed
   end
@@ -141,15 +141,15 @@ RSpec.describe Bank::Interfaces::Api, :database do
     it 'lists the names of the sample files, in the order they were given' do
       get '/api/samples'
 
-      expect(body['samples']).to eq(['transfers.csv', 'all_rejected_bad_amounts.csv'])
+      expect(body['samples']).to eq(['transfers.csv', 'all_rejected_wrong_columns.csv'])
     end
   end
 
   describe 'GET /api/samples/:name' do
     it 'sends the sample file with that name' do
-      get '/api/samples/all_rejected_bad_amounts.csv'
+      get '/api/samples/all_rejected_wrong_columns.csv'
 
-      expect(last_response.body).to eq(File.read(fixture_path('edge_cases/all_rejected_bad_amounts.csv')))
+      expect(last_response.body).to eq(File.read(fixture_path('edge_cases/all_rejected_wrong_columns.csv')))
     end
 
     it 'sends it as a download with the same name' do

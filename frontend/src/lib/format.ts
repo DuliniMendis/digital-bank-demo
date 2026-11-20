@@ -6,7 +6,7 @@ export function formatMoney(amount: string): string {
   return `$${withCommas}.${cents}`
 }
 
-// Turns "all_rejected_bad_amounts.csv" into "all rejected bad amounts". The
+// Turns "all_rejected_wrong_columns.csv" into "all rejected wrong columns". The
 // sample files are named after what they do, so the name is the label.
 export function sampleLabel(name: string): string {
   return name.replace(/\.csv$/, '').replaceAll('_', ' ')

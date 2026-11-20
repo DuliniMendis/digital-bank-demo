@@ -51,9 +51,9 @@ test('a transfer the sender cannot afford is rejected and moves nothing', async 
 })
 
 test('a sample picked from the list does what its name says', async ({ page }) => {
-  await page.getByLabel('Or try a sample file').selectOption({ label: 'all rejected bad amounts' })
+  await page.getByLabel('Or try a sample file').selectOption({ label: 'all rejected wrong columns' })
   await page.getByRole('button', { name: 'Apply sample' }).click()
 
-  await expect(page.getByText('15 transfers: 0 completed, 15 rejected.')).toBeVisible()
+  await expect(page.getByText('6 transfers: 0 completed, 6 rejected.')).toBeVisible()
   await expect(accounts(page).getByText('$5,000.00')).toBeVisible()
 })

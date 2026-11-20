@@ -77,7 +77,7 @@ function fakeFetch(path: string | URL | Request, options?: RequestInit): Promise
 beforeEach(() => {
   server = {
     accounts: { status: 200, body: { accounts: openingAccounts } },
-    samples: { status: 200, body: { samples: ['transfers.csv', 'all_rejected_bad_amounts.csv'] } },
+    samples: { status: 200, body: { samples: ['transfers.csv', 'all_rejected_wrong_columns.csv'] } },
     upload: { status: 200, body: { transfers: [], accounts: openingAccounts } },
     reset: { status: 200, body: { accounts: openingAccounts } },
   }
@@ -138,11 +138,11 @@ test('applying a sample sends that file and shows the result', async () => {
   render(<App />)
   const user = userEvent.setup()
 
-  await user.selectOptions(await screen.findByLabelText('Or try a sample file'), 'all rejected bad amounts')
+  await user.selectOptions(await screen.findByLabelText('Or try a sample file'), 'all rejected wrong columns')
   await user.click(screen.getByRole('button', { name: 'Apply sample' }))
 
   expect(await screen.findByText('1 transfer: 0 completed, 1 rejected.')).toBeInTheDocument()
-  expect((uploadsSent[0].get('file') as File).name).toBe('all_rejected_bad_amounts.csv')
+  expect((uploadsSent[0].get('file') as File).name).toBe('all_rejected_wrong_columns.csv')
 })
 
 test('an error from the server is shown', async () => {
