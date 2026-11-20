@@ -64,6 +64,16 @@ RSpec.describe Bank::Domain::Account do
     end
   end
 
+  describe '#overdrawn_after?' do
+    it 'is false when the money coming in covers what goes out' do
+      expect(account).not_to be_overdrawn_after(incoming: money(500), outgoing: money(1500))
+    end
+
+    it 'is true when one cent more goes out than the account will have' do
+      expect(account).to be_overdrawn_after(incoming: money(500), outgoing: money(1501))
+    end
+  end
+
   describe '#==' do
     it 'is the same account as another with the same number' do
       same_number = described_class.new(number: number, balance: money(5))
