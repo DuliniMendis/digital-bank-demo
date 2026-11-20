@@ -29,14 +29,14 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   try {
     response = await fetch(path, options)
   } catch {
-    throw new Error('Could not reach the server.')
+    throw new Error('The server could not be reached. Check your connection, then try again.')
   }
 
   // An error from the API has a JSON body with an `error` message. An error
   // from anything in between (a proxy, for example) may not be JSON at all.
   const body = await response.json().catch(() => null)
   if (!response.ok) {
-    throw new Error(body?.error ?? `The server answered with status ${response.status}.`)
+    throw new Error(body?.error ?? `The server answered with status ${response.status}. Try again in a moment.`)
   }
   return body as T
 }

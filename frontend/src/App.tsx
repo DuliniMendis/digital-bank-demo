@@ -5,8 +5,8 @@ import { AccountsSection } from './components/AccountsSection'
 import { PageHeader } from './components/PageHeader'
 import { UploadSection } from './components/UploadSection'
 
-// What the page is waiting for, if anything. It decides which button shows a
-// "working" label, and stops a second click while the first is under way.
+// What the page is waiting for, if anything. It decides where the spinner
+// shows, and stops a second click while the first is under way.
 type Busy = 'loading' | 'uploading' | 'resetting' | null
 
 // The whole page. Everything the page remembers is kept here, along with what
@@ -25,12 +25,15 @@ export default function App() {
   useEffect(() => {
     getAccounts()
       .then(setAccounts)
-      .catch(showError)
+      .catch((caught) => showError('The accounts could not be loaded.', caught))
       .finally(() => setBusy(null))
   }, [])
 
-  function showError(caught: unknown) {
-    setError(caught instanceof Error ? caught.message : 'Something went wrong.')
+  // The message starts with what the page was doing, so the person knows
+  // which of the three requests failed, and ends with the reason.
+  function showError(whatFailed: string, caught: unknown) {
+    const reason = caught instanceof Error ? caught.message : 'Something went wrong.'
+    setError(`${whatFailed} ${reason}`)
   }
 
   async function upload(file: File) {
@@ -41,7 +44,7 @@ export default function App() {
       setResults(result.transfers)
       setAccounts(result.accounts)
     } catch (caught) {
-      showError(caught)
+      showError('The upload failed.', caught)
     } finally {
       setBusy(null)
     }
@@ -54,7 +57,7 @@ export default function App() {
       setAccounts(await resetDemo())
       setResults(null)
     } catch (caught) {
-      showError(caught)
+      showError('The reset failed.', caught)
     } finally {
       setBusy(null)
     }
@@ -71,7 +74,12 @@ export default function App() {
       )}
 
       <AccountsSection accounts={accounts} loading={busy === 'loading'} errorShown={error !== null} />
-      <UploadSection uploading={busy === 'uploading'} results={results} onUpload={upload} />
+      <UploadSection
+        uploading={busy === 'uploading'}
+        disabled={busy !== null}
+        results={results}
+        onUpload={upload}
+      />
     </div>
   )
 }

@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import { Spinner } from './Spinner'
 
 type Props = {
-  busy: boolean
+  uploading: boolean
+  disabled: boolean
   onUpload: (file: File) => void
 }
 
-export function UploadForm({ busy, onUpload }: Props) {
+export function UploadForm({ uploading, disabled, onUpload }: Props) {
   const [file, setFile] = useState<File | null>(null)
 
   function submit(event: FormEvent) {
@@ -25,8 +27,9 @@ export function UploadForm({ busy, onUpload }: Props) {
           accept=".csv,text/csv"
           onChange={(event) => setFile(event.target.files?.[0] ?? null)}
         />
-        <button type="submit" className="primary" disabled={!file || busy}>
-          {busy ? 'Applying…' : 'Apply transfers'}
+        <button type="submit" className="primary" disabled={!file || disabled}>
+          {uploading && <Spinner />}
+          {uploading ? 'Applying…' : 'Apply transfers'}
         </button>
       </div>
       <p className="hint">
