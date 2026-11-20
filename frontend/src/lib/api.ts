@@ -51,9 +51,12 @@ export async function getAccounts(): Promise<Account[]> {
   return body.accounts
 }
 
-export function postTransfers(file: File): Promise<UploadResult> {
+// With `settleAtEnd` the API checks the balances once, after the whole file,
+// and not after every line.
+export function postTransfers(file: File, settleAtEnd: boolean): Promise<UploadResult> {
   const form = new FormData()
   form.append('file', file)
+  if (settleAtEnd) form.append('settle_at_end', 'true')
   return request<UploadResult>('/api/transfers', { method: 'POST', body: form })
 }
 

@@ -38,7 +38,8 @@ export function SamplePicker({ samples, applying, disabled, onApply }: Props) {
         </button>
       </div>
       <p className="hint">
-        Each name says what to expect, counted from the opening balances. To see what is in the chosen file,{' '}
+        Each name says what to expect with the box above unticked, counted from the opening balances. To see what is in
+        the chosen file,{' '}
         <a href={sampleUrl(chosen)} download>
           download it
         </a>
