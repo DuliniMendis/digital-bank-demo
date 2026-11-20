@@ -7,6 +7,12 @@ RSpec.describe Bank::Infrastructure::CsvFiles do
 
       expect(rows.first.to_h).to eq(line: 1, number: '1111234522226789', balance: '5000.00')
     end
+
+    it 'keeps a comma inside the balance, so the domain can reject it' do
+      rows = described_class.opening_balances("1111234522226789,5,000.00\n")
+
+      expect(rows.first.balance).to eq('5,000.00')
+    end
   end
 
   describe '.transfer_requests' do
@@ -40,6 +46,12 @@ RSpec.describe Bank::Infrastructure::CsvFiles do
       rows = described_class.transfer_requests("1111234522226789,1212343433335665\n")
 
       expect(rows.first.amount).to be_nil
+    end
+
+    it 'keeps a comma inside the amount, so the domain can reject it' do
+      rows = described_class.transfer_requests("1111234522226789,1212343433335665,1,000.00\n")
+
+      expect(rows.first.amount).to eq('1,000.00')
     end
 
     it 'ignores a byte-order mark at the start of the file' do
