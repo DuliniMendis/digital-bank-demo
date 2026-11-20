@@ -53,7 +53,9 @@ curl -F file=@spec/fixtures/transfers.csv http://localhost:9292/api/transfers
 The response lists each transfer as `completed` or `rejected`, with the line
 number and the reason for a rejection, followed by the balances afterwards.
 
-Nothing stops the same file being posted twice. It is applied a second time.
+Nothing stops the same transfers file being posted twice, and that is on
+purpose. A second post is applied as a second set of transfers, because two
+files with the same lines can both be genuine.
 
 The other routes:
 
