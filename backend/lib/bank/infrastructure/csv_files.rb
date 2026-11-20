@@ -13,15 +13,27 @@ module Bank
       # Each line of the balances file is: account number, balance.
       def self.opening_balances(text)
         rows(text).map do |line, fields|
-          Application::OpeningBalance.new(line: line, number: fields[0], balance: fields[1])
+          Application::OpeningBalance.new(line: line, number: fields[0], balance: amount_text(fields, 1))
         end
       end
 
       # Each line of the transfers file is: from account, to account, amount.
       def self.transfer_requests(text)
         rows(text).map do |line, fields|
-          Application::TransferRequest.new(line: line, from: fields[0], to: fields[1], amount: fields[2])
+          Application::TransferRequest.new(
+            line: line, from: fields[0], to: fields[1], amount: amount_text(fields, 2)
+          )
         end
+      end
+
+      # The amount is the last column, which starts at `index`. A comma
+      # inside an amount, as in 1,000.00, makes it look like two columns.
+      # Reading only the first of them would move $1, so any columns after
+      # it are joined back on with their commas. The amount then arrives as
+      # "1,000.00" and is refused as an invalid amount.
+      def self.amount_text(fields, index)
+        columns = fields.drop(index)
+        columns.join(',') unless columns.empty?
       end
 
       # Returns [line number, fields] for every line of data.
@@ -57,7 +69,7 @@ module Bank
       def self.as_utf8(text)
         text.dup.force_encoding(Encoding::UTF_8).scrub.delete_prefix(BYTE_ORDER_MARK)
       end
-      private_class_method :rows, :header?, :as_utf8
+      private_class_method :amount_text, :rows, :header?, :as_utf8
     end
   end
 end
