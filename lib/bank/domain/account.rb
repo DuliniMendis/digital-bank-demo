@@ -29,6 +29,14 @@ module Bank
         @balance -= amount
       end
 
+      # True when the account could not pay `outgoing` even after `incoming`
+      # has arrived. It is the rule from `withdraw`, asked about a whole
+      # file at once: only the balance at the end has to stay at or above
+      # zero.
+      def overdrawn_after?(incoming:, outgoing:)
+        outgoing > balance + incoming
+      end
+
       # Two accounts are the same account if their numbers match, whatever
       # their balances.
       def ==(other)
