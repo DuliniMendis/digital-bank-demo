@@ -198,6 +198,13 @@ and the seed command both run when they start.
 - **A bad balances file stops everything; a bad transfer does not.** The
   starting balances have to be trustworthy. A bad transfer line is one
   rejected transfer.
+- **Transfers are applied one at a time, in the order of the file.** Each
+  transfer sees the balances left by the ones before it. An early transfer
+  can complete and a later one from the same account be rejected, because
+  the money has already gone. In the same way, money that arrives early in
+  the file can be spent later in it. Putting the lines in a different order
+  can therefore change which ones are rejected. The edge-case fixture
+  `3_completed_3_rejected_overdraft_limit.csv` shows both cases.
 - **A transfer is all or nothing.** Each one runs in its own database
   transaction, so both balances are saved or neither is. Seeding works the
   same way for the whole balances file.
