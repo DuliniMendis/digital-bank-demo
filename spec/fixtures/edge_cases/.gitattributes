@@ -1,4 +1,0 @@
-# Some of these files are about their exact bytes: Windows line endings,
-# mixed line endings and bytes that are not valid text. This stops Git from
-# converting line endings in them on any machine.
-*.csv -text
