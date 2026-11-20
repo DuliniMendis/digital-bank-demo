@@ -17,7 +17,7 @@ RSpec.describe Bank::Interfaces::Api, :database do
     described_class.start(
       database: database,
       balances_file: fixture_path('account_balances.csv'),
-      sample_transfers_file: fixture_path('transfers.csv')
+      sample_files: [fixture_path('transfers.csv'), fixture_path('edge_cases/all_rejected_bad_amounts.csv')]
     )
     described_class.reseed
   end
@@ -137,15 +137,31 @@ RSpec.describe Bank::Interfaces::Api, :database do
     end
   end
 
-  describe 'GET /api/sample-transfers.csv' do
-    before { get '/api/sample-transfers.csv' }
+  describe 'GET /api/samples' do
+    it 'lists the names of the sample files, in the order they were given' do
+      get '/api/samples'
 
-    it 'sends the sample transfers file' do
-      expect(last_response.body).to eq(File.read(fixture_path('transfers.csv')))
+      expect(body['samples']).to eq(['transfers.csv', 'all_rejected_bad_amounts.csv'])
+    end
+  end
+
+  describe 'GET /api/samples/:name' do
+    it 'sends the sample file with that name' do
+      get '/api/samples/all_rejected_bad_amounts.csv'
+
+      expect(last_response.body).to eq(File.read(fixture_path('edge_cases/all_rejected_bad_amounts.csv')))
     end
 
-    it 'sends it as a download called sample-transfers.csv' do
-      expect(last_response.headers['content-disposition']).to eq('attachment; filename="sample-transfers.csv"')
+    it 'sends it as a download with the same name' do
+      get '/api/samples/transfers.csv'
+
+      expect(last_response.headers['content-disposition']).to eq('attachment; filename="transfers.csv"')
+    end
+
+    it 'answers 404 for a file that is not one of the samples' do
+      get '/api/samples/account_balances.csv'
+
+      expect(last_response.status).to eq(404)
     end
   end
 

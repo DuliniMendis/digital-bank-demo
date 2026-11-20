@@ -18,10 +18,15 @@ balances_file = ENV.fetch('BALANCES_FILE', sample_balances)
 
 abort "BALANCES_FILE is #{balances_file}, which is not a file." unless File.file?(balances_file)
 
+# The transfers files the page offers to try: the sample day first, then the
+# edge cases in alphabetical order.
+sample_files = [File.expand_path('spec/fixtures/transfers.csv', __dir__)] +
+               Dir[File.expand_path('spec/fixtures/edge_cases/*.csv', __dir__)]
+
 Bank::Interfaces::Api.start(
   database: Bank::Infrastructure::Database.from_environment,
   balances_file: balances_file,
-  sample_transfers_file: File.expand_path('spec/fixtures/transfers.csv', __dir__)
+  sample_files: sample_files
 )
 
 run Bank::Interfaces::Api
