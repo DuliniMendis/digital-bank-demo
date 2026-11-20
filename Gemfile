@@ -3,8 +3,8 @@
 source 'https://rubygems.org'
 
 # Any Ruby from 3.3 onwards will do, because that is the oldest version the
-# gems in Gemfile.lock support. The version used for development is in
-# `.ruby-version`.
+# gems in Gemfile.lock support. No exact version is pinned, so a version
+# manager uses whichever Ruby is already installed.
 ruby '>= 3.3'
 
 # CSV parsing used to be part of Ruby itself. Since Ruby 3.4 it is a
