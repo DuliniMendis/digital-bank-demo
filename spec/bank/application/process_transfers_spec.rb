@@ -96,4 +96,70 @@ RSpec.describe Bank::Application::ProcessTransfers do
       expect(balance_of(bob)).to eq('0.00')
     end
   end
+
+  # Bob starts with $0.50, so line 1 is more than he has until line 2 has
+  # paid him.
+  context 'when settling at the end' do
+    let(:requests) do
+      [
+        request(bob, alice, '4.00', line: 1),
+        request(alice, bob, '5.00', line: 2)
+      ]
+    end
+
+    it 'completes a transfer that a later line pays for' do
+      results = process_transfers.call(requests, settle_at_end: true)
+
+      expect(results.map(&:completed?)).to eq([true, true])
+    end
+
+    it 'leaves each account with its balance after the whole file' do
+      process_transfers.call(requests, settle_at_end: true)
+
+      expect([balance_of(alice), balance_of(bob)]).to eq(['9.00', '1.50'])
+    end
+
+    it 'rejects that transfer when the flag is not given' do
+      results = process_transfers.call(requests)
+
+      expect(results.map(&:completed?)).to eq([false, true])
+    end
+  end
+
+  context 'when settling at the end would leave an account below $0' do
+    let(:requests) do
+      [
+        request(alice, bob, '1.00', line: 1),
+        request(bob, alice, '9.00', line: 2)
+      ]
+    end
+
+    it 'rejects every transfer in the file, naming the account' do
+      results = process_transfers.call(requests, settle_at_end: true)
+
+      expect(results.map(&:rejection_reason).uniq)
+        .to eq(['nothing in this file was applied, because it would leave 1212343433335665 below $0'])
+    end
+
+    it 'changes no balance' do
+      process_transfers.call(requests, settle_at_end: true)
+
+      expect([balance_of(alice), balance_of(bob)]).to eq(['10.00', '0.50'])
+    end
+  end
+
+  context 'when settling at the end with a line that cannot be used' do
+    let(:requests) do
+      [
+        request(alice, stranger, '1.00', line: 1),
+        request(alice, bob, '3.00', line: 2)
+      ]
+    end
+
+    it 'rejects that line by itself and applies the rest' do
+      results = process_transfers.call(requests, settle_at_end: true)
+
+      expect(results.map(&:rejection_reason)).to eq(['account 9999999999999999 does not exist', nil])
+    end
+  end
 end

@@ -38,6 +38,17 @@ curl -F file=@spec/fixtures/transfers.csv http://localhost:9292/transfers
 The response lists each transfer as `completed` or `rejected`, with the line
 number and the reason for a rejection, followed by the balances afterwards.
 
+By default each transfer has to be affordable at the moment it is applied. To
+check the balances only once, after the whole file, add `settle_at_end`:
+
+```bash
+curl -F file=@spec/fixtures/transfers.csv -F settle_at_end=true http://localhost:9292/transfers
+```
+
+A transfer may then spend money that arrives later in the file. If the file
+would leave any account below $0, nothing in it is applied, and every transfer
+in it is rejected with that reason.
+
 To see the balances at any time:
 
 ```bash
@@ -112,6 +123,13 @@ A few decisions shape the code:
   the file can be spent later in it. Putting the lines in a different order
   can therefore change which ones are rejected. The edge-case fixture
   `3_completed_3_rejected_overdraft_limit.csv` shows both cases.
+- **Settling at the end is an option, and it is all or nothing.** With
+  `settle_at_end`, each account first receives everything coming to it in the
+  file and then pays out everything leaving it, so the order of the lines no
+  longer matters. Every account is checked before any balance changes. A line
+  that cannot be read, or that names an unknown account, is still rejected by
+  itself. `Account` owns this rule too, next to the one for a single
+  withdrawal.
 
 ## Extensions
 

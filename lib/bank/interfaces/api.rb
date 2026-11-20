@@ -11,6 +11,9 @@ module Bank
     #   GET  /accounts    the current balance of every account
     #   POST /transfers   applies a transfers CSV, uploaded as form field "file"
     #
+    # Adding the form field `settle_at_end=true` to an upload checks the
+    # balances once, after the whole file, and not after every line.
+    #
     # The accounts live in memory, so balances carry over from one request to
     # the next and go back to their starting values when the server restarts.
     #
@@ -56,7 +59,8 @@ module Bank
         end
 
         def process(requests)
-          Application::ProcessTransfers.new(accounts: settings.accounts).call(requests)
+          Application::ProcessTransfers.new(accounts: settings.accounts)
+                                       .call(requests, settle_at_end: params[:settle_at_end] == 'true')
         end
 
         # Balances are sent as strings such as "4820.50". A JSON number would

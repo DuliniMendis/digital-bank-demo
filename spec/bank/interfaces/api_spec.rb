@@ -21,9 +21,11 @@ RSpec.describe Bank::Interfaces::Api do
 
   # Uploads the CSV text as a file in a form field called "file", the same
   # way `curl -F file=@transfers.csv` does.
-  def post_transfers(csv_text)
+  # Any `other_fields` are sent as plain form fields beside the file, the
+  # way a second `-F` does with curl.
+  def post_transfers(csv_text, **other_fields)
     file = Rack::Test::UploadedFile.new(StringIO.new(csv_text), 'text/csv', original_filename: 'transfers.csv')
-    post '/transfers', file: file
+    post '/transfers', file: file, **other_fields
   end
 
   def body
@@ -78,6 +80,24 @@ RSpec.describe Bank::Interfaces::Api do
       post_transfers("1111234522226789,1212343433335665,5é\n")
 
       expect(body['transfers'].first).to include('status' => 'rejected', 'amount' => '5é')
+    end
+
+    # The first line sends $600.00 from an account that holds $550.00, and
+    # the second line pays that account $100.00.
+    context 'with a transfer that a later line pays for' do
+      let(:csv) { "2222123433331212,1212343433335665,600.00\n1212343433335665,2222123433331212,100.00\n" }
+
+      it 'rejects it by default' do
+        post_transfers(csv)
+
+        expect(body['transfers'].map { |transfer| transfer['status'] }).to eq(%w[rejected completed])
+      end
+
+      it 'completes it when the upload asks to settle at the end' do
+        post_transfers(csv, settle_at_end: 'true')
+
+        expect(body['transfers'].map { |transfer| transfer['status'] }).to eq(%w[completed completed])
+      end
     end
 
     it 'keeps the balances between one post and the next' do
