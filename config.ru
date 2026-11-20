@@ -19,7 +19,15 @@ balances_file = ENV.fetch('BALANCES_FILE', sample_balances)
 
 abort "BALANCES_FILE is #{balances_file}, which is not a file." unless File.file?(balances_file)
 
-Bank::Interfaces::Api.load_balances(balances_file)
+# A balances file that cannot be used stops the server with one line that
+# says what is wrong. Without the rescue the same message would be buried in
+# a Ruby backtrace.
+begin
+  Bank::Interfaces::Api.load_balances(balances_file)
+rescue Bank::Application::InvalidOpeningBalances, CSV::MalformedCSVError => e
+  abort "#{balances_file} could not be loaded. #{e.message}"
+end
+
 puts "Loaded account balances from #{balances_file}"
 
 run Bank::Interfaces::Api
