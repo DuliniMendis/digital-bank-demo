@@ -43,6 +43,7 @@ type Answer = { status: number; body: unknown }
 // to set up its scenario.
 let server: {
   accounts: Answer
+  samples: Answer
   upload: Answer
   reset: Answer
 }
@@ -54,7 +55,14 @@ function fakeFetch(path: string | URL | Request, options?: RequestInit): Promise
   const method = options?.method ?? 'GET'
   let answer: Answer
 
-  if (method === 'POST' && path === '/api/transfers') {
+  // One sample file is the only answer that is CSV text and not JSON.
+  if (String(path).startsWith('/api/samples/')) {
+    return Promise.resolve(new Response('1111234522226789,1212343433335665,abc\n'))
+  }
+
+  if (path === '/api/samples') {
+    answer = server.samples
+  } else if (method === 'POST' && path === '/api/transfers') {
     uploadsSent.push(options?.body as FormData)
     answer = server.upload
   } else if (method === 'POST' && path === '/api/reset') {
@@ -69,6 +77,7 @@ function fakeFetch(path: string | URL | Request, options?: RequestInit): Promise
 beforeEach(() => {
   server = {
     accounts: { status: 200, body: { accounts: openingAccounts } },
+    samples: { status: 200, body: { samples: ['transfers.csv', 'all_rejected_wrong_columns.csv'] } },
     upload: { status: 200, body: { transfers: [], accounts: openingAccounts } },
     reset: { status: 200, body: { accounts: openingAccounts } },
   }
@@ -122,6 +131,18 @@ test('a rejected transfer is shown with the reason', async () => {
   expect(await screen.findByText('2 transfers: 1 completed, 1 rejected.')).toBeInTheDocument()
   expect(screen.getByText('Rejected')).toBeInTheDocument()
   expect(screen.getByText(/does not have sufficient funds to withdraw \$9999.00/)).toBeInTheDocument()
+})
+
+test('applying a sample sends that file and shows the result', async () => {
+  server.upload = { status: 200, body: { transfers: [rejected], accounts: openingAccounts } }
+  render(<App />)
+  const user = userEvent.setup()
+
+  await user.selectOptions(await screen.findByLabelText('Or try a sample file'), 'all rejected wrong columns')
+  await user.click(screen.getByRole('button', { name: 'Apply sample' }))
+
+  expect(await screen.findByText('1 transfer: 0 completed, 1 rejected.')).toBeInTheDocument()
+  expect((uploadsSent[0].get('file') as File).name).toBe('all_rejected_wrong_columns.csv')
 })
 
 test('an error from the server is shown', async () => {

@@ -8,22 +8,28 @@ module Bank
     # The HTTP API. It contains no business logic: each route reads the
     # request, calls an application service and returns the result as JSON.
     #
-    #   GET  /api/accounts              the current balance of every account
-    #   POST /api/transfers             applies a transfers CSV, uploaded as form field "file"
-    #   POST /api/reset                 reseeds: puts the opening balances back
-    #   GET  /api/sample-transfers.csv  a sample transfers file, as a download
+    #   GET  /api/accounts        the current balance of every account
+    #   POST /api/transfers       applies a transfers CSV, uploaded as form field "file"
+    #   POST /api/reset           reseeds: puts the opening balances back
+    #   GET  /api/samples         the names of the sample transfers files
+    #   GET  /api/samples/:name   one sample transfers file, as a download
     #
     # The accounts are kept in Postgres, so balances are still there after
     # the server restarts. The server never loads balances when it starts:
     # the database is filled by seeding it.
     class Api < Sinatra::Base
       # Tells the app which database to use, which balances file a reset
-      # goes back to, and which transfers file it offers as a sample. Called
+      # goes back to, and which transfers files it offers as samples. Called
       # once, at startup.
-      def self.start(database:, balances_file:, sample_transfers_file:)
+      #
+      # The samples are kept as a Hash from each file's name to its path. A
+      # request can then only ever name a file that is in the Hash, never
+      # some other file on the server.
+      def self.start(database:, balances_file:, sample_files:)
         set :accounts, Infrastructure::AccountRepository.new(database)
         set :balances_file, balances_file
-        set :sample_transfers_file, sample_transfers_file
+        names_to_paths = sample_files.to_h { |path| [File.basename(path), path] }
+        set :sample_files, names_to_paths
       end
 
       # Removes the accounts and loads the balances file into the database
@@ -53,12 +59,18 @@ module Bank
         json(accounts: accounts_as_json)
       end
 
-      # The page links to this, so a visitor has a file to try. Serving it
-      # from here means the page needs no copy of its own that could drift
-      # from the file the specs use.
-      get '/api/sample-transfers.csv' do
-        send_file settings.sample_transfers_file,
-                  type: :csv, disposition: 'attachment', filename: 'sample-transfers.csv'
+      # The page offers these files to try. Serving them from here means the
+      # page needs no copies of its own that could drift from the files the
+      # specs use.
+      get '/api/samples' do
+        json(samples: settings.sample_files.keys)
+      end
+
+      get '/api/samples/:name' do
+        path = settings.sample_files[params[:name]]
+        halt 404 unless path
+
+        send_file path, type: :csv, disposition: 'attachment'
       end
 
       # An unknown address gets a JSON error, like every other failure.

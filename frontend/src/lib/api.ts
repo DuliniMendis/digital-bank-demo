@@ -24,13 +24,18 @@ export type UploadResult = {
   accounts: Account[]
 }
 
-async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  let response: Response
+// `fetch` only fails when no answer arrives at all. An answer that reports an
+// error, such as a 404, still counts as an answer and is returned.
+async function send(path: string, options?: RequestInit): Promise<Response> {
   try {
-    response = await fetch(path, options)
+    return await fetch(path, options)
   } catch {
     throw new Error('The server could not be reached. Check your connection, then try again.')
   }
+}
+
+async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const response = await send(path, options)
 
   // An error from the API has a JSON body with an `error` message. An error
   // from anything in between (a proxy, for example) may not be JSON at all.
@@ -50,6 +55,27 @@ export function postTransfers(file: File): Promise<UploadResult> {
   const form = new FormData()
   form.append('file', file)
   return request<UploadResult>('/api/transfers', { method: 'POST', body: form })
+}
+
+// The names of the sample transfers files the API offers.
+export async function getSamples(): Promise<string[]> {
+  const body = await request<{ samples: string[] }>('/api/samples')
+  return body.samples
+}
+
+// Where one sample file can be downloaded from.
+export function sampleUrl(name: string): string {
+  return `/api/samples/${encodeURIComponent(name)}`
+}
+
+// Fetches one sample file as a File, so it can be sent through the same
+// upload as a file picked from the computer.
+export async function getSampleFile(name: string): Promise<File> {
+  const response = await send(sampleUrl(name))
+  if (!response.ok) {
+    throw new Error(`The sample file could not be fetched (status ${response.status}).`)
+  }
+  return new File([await response.blob()], name, { type: 'text/csv' })
 }
 
 export async function resetDemo(): Promise<Account[]> {

@@ -62,7 +62,8 @@ The other routes:
 ```bash
 curl http://localhost:9292/api/accounts                 # the current balances
 curl -X POST http://localhost:9292/api/reset            # reseeds: puts the opening balances back
-curl http://localhost:9292/api/sample-transfers.csv     # the sample transfers file, for the page's download link
+curl http://localhost:9292/api/samples                  # the names of the sample transfers files
+curl http://localhost:9292/api/samples/transfers.csv    # one of them, as a download
 ```
 
 A header row is optional in both CSV files. A balances line is
