@@ -14,7 +14,11 @@ RSpec.describe Bank::Interfaces::Api, :database do
   # Every example begins with an empty database, so each one seeds it with
   # the sample balances first.
   before do
-    described_class.start(database: database, balances_file: fixture_path('account_balances.csv'))
+    described_class.start(
+      database: database,
+      balances_file: fixture_path('account_balances.csv'),
+      sample_transfers_file: fixture_path('transfers.csv')
+    )
     described_class.reseed
   end
 
@@ -130,6 +134,18 @@ RSpec.describe Bank::Interfaces::Api, :database do
 
     it 'seeds it from the balances file' do
       expect(balances['1111234522226789']).to eq('5000.00')
+    end
+  end
+
+  describe 'GET /api/sample-transfers.csv' do
+    before { get '/api/sample-transfers.csv' }
+
+    it 'sends the sample transfers file' do
+      expect(last_response.body).to eq(File.read(fixture_path('transfers.csv')))
+    end
+
+    it 'sends it as a download called sample-transfers.csv' do
+      expect(last_response.headers['content-disposition']).to eq('attachment; filename="sample-transfers.csv"')
     end
   end
 

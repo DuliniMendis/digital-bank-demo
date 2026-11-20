@@ -34,7 +34,7 @@ export function UploadForm({ uploading, disabled, onUpload }: Props) {
       </div>
       <p className="hint">
         One transfer per line, with no header row: <code>from,to,amount</code>. You can try it with the{' '}
-        <a href="/sample-transfers.csv" download>
+        <a href="/api/sample-transfers.csv" download>
           sample file
         </a>
         .
