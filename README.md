@@ -1,8 +1,9 @@
 # Digital Bank Demo
 
-This is a small banking service that uses Ruby. It loads account balances for one company from a CSV
-file, then applies a day's transfers from a second CSV file. A transfer that
-would take the sending account below $0 is rejected.
+This is a small banking service written in Ruby. It loads account balances
+for one company from a CSV file, then applies a day's transfers from a second
+CSV file. A transfer that would take the sending account below $0 is
+rejected.
 
 **A hosted version is at <https://digital-bank-demo-flame.vercel.app>.** It
 runs the `extended` branch, which adds a web page and a database to what is
@@ -26,8 +27,8 @@ This loads the sample balances into memory and listens on
 BALANCES_FILE=path/to/balances.csv bundle exec rackup
 ```
 
-A bad line in the balances file stops the server from starting, and an error
-with the line number would indicate what the issue was.
+A bad line in the balances file stops the server from starting. The error
+gives the line number and says what is wrong with it.
 
 From a second terminal, post a day's transfers:
 
@@ -35,19 +36,31 @@ From a second terminal, post a day's transfers:
 curl -F file=@spec/fixtures/transfers.csv http://localhost:9292/transfers
 ```
 
-The response lists each transfer as `completed` or `rejected`, with the line
-number and the reason for a rejection, followed by the balances afterwards.
+The response lists every transfer with its line number and whether it was
+`completed` or `rejected`, followed by the balances afterwards. This is the
+response to the sample file, shortened to one transfer and one account:
 
-By default each transfer has to be affordable at the moment it is applied. To
-check the balances only once, after the whole file, add `settle_at_end`:
-
-```bash
-curl -F file=@spec/fixtures/transfers.csv -F settle_at_end=true http://localhost:9292/transfers
+```json
+{
+  "transfers": [
+    {
+      "line": 1,
+      "from": "1111234522226789",
+      "to": "1212343433335665",
+      "amount": "500.00",
+      "status": "completed",
+      "reason": null
+    }
+  ],
+  "accounts": [
+    { "number": "1111234522226789", "balance": "4820.50" }
+  ]
+}
 ```
 
-A transfer may then spend money that arrives later in the file. If the file
-would leave any account below $0, nothing in it is applied, and every transfer
-in it is rejected with that reason.
+A rejected transfer has `"status": "rejected"`, and its `reason` says why,
+for example `account 1111234522226789 does not have sufficient funds to
+withdraw $5000.01`.
 
 To see the balances at any time:
 
@@ -55,15 +68,20 @@ To see the balances at any time:
 curl http://localhost:9292/accounts
 ```
 
-A header row is optional in both CSV files. A row in the CSV for balances includes
-`account number,balance` and a row in the CSV for transfers includes `from,to,amount`. Sample
-files are in `spec/fixtures/`.
+### Good to know
 
-Balances are only reset when the server restarts.
-
-Nothing stops the same transfers file being posted twice, and that is on
-purpose. A second post is applied as a second set of transfers, because two
-files with the same lines can both be genuine.
+- **The file formats.** Each line of the balances file is
+  `account number,balance`, and each line of the transfers file is
+  `from,to,amount`. A header row is optional in both. Sample files are in
+  `spec/fixtures/`.
+- **Balances are kept in memory.** They carry over from one post to the next
+  and only go back to their starting values when the server restarts.
+- **The same file can be posted twice.** A second post is applied as a second
+  set of transfers, on purpose, because two files with the same lines can
+  both be genuine.
+- **There are files of awkward input to try.** They are in
+  `spec/fixtures/edge_cases/`, and the name of each file says what happens
+  when it is posted to a freshly started server.
 
 ## Running the tests
 
@@ -123,95 +141,49 @@ A few decisions shape the code:
   the file can be spent later in it. Putting the lines in a different order
   can therefore change which ones are rejected. The edge-case fixture
   `3_completed_3_rejected_overdraft_limit.csv` shows both cases.
-- **Settling at the end is an option, and it is all or nothing.** With
-  `settle_at_end`, each account first receives everything coming to it in the
-  file and then pays out everything leaving it, so the order of the lines no
-  longer matters. Every account is checked before any balance changes. A line
-  that cannot be read, or that names an unknown account, is still rejected by
-  itself. `Account` owns this rule too, next to the one for a single
-  withdrawal.
 
-## Extensions
+## An option: settling at the end
+
+By default each transfer has to be affordable at the moment it is applied. To
+check the balances only once, after the whole file, add `settle_at_end`:
+
+```bash
+curl -F file=@spec/fixtures/transfers.csv -F settle_at_end=true http://localhost:9292/transfers
+```
+
+Each account first receives everything coming to it in the file and then pays
+out everything leaving it, so a transfer may spend money that arrives later
+in the file and the order of the lines no longer matters.
+
+It is all or nothing. Every account is checked before any balance changes,
+and if the file would leave any account below $0, nothing in it is applied
+and every transfer in it is rejected with that reason. A line that cannot be
+read, or that names an unknown account, is still rejected by itself.
+
+`Account` owns this rule too, next to the one for a single withdrawal.
+
+## Beyond the brief
 
 This branch is the simplest version that answers the brief. The `extended`
 branch builds on it with the things a real service would need:
 
 - **A web page**, built with React, for uploading a file and seeing the
   balances and the result of that upload.
-- **A live deployment**, hosted on Vercel.
-- **A Postgres database.** Balances survive a restart and are seeded in a DB.
-  Uses a Neon DB through Vercel.
+- **A live deployment**, hosted on Vercel at
+  <https://digital-bank-demo-flame.vercel.app>.
+- **A Postgres database**, hosted by Neon through Vercel, so balances
+  survive a restart.
 - **Locking, so uploads that arrive together are safe.** Each transfer runs
-  in a database transaction that can rollback if either the withdrawal
-  or deposit fails.
-- **React component tests and E2E tests**, built with React Testing Library,
-  Vitest and Playwright.
+  in a database transaction, which is rolled back if either the withdrawal or
+  the deposit fails.
+- **React component tests and end-to-end tests**, built with React Testing
+  Library, Vitest and Playwright.
 
 Locking was left out of this branch on purpose. The server here can handle
 two requests at once, so two uploads arriving at the same moment could both
 spend the same balance. A database solves that properly with transactions and
 row locks.
 
-### Running the extended branch
-
-**The extended branch is hosted at <https://digital-bank-demo-flame.vercel.app>.
-Use that to test it without installing anything.**
-
-To run it yourself instead, it requires Node 26 and a running Postgres as well as Ruby. On that branch the
-Ruby code is in `backend/` and the web page is in `frontend/`.
-
-Switch to the branch, then create a database and seed it with the sample
-balances. Creating and seeding are done once:
-
-```bash
-git switch extended
-cd backend
-bundle install
-createdb bank_development
-DATABASE_URL=postgres://localhost/bank_development bundle exec ruby db/seed.rb
-```
-
-Start the API, which listens on `http://localhost:9292`:
-
-```bash
-DATABASE_URL=postgres://localhost/bank_development bundle exec rackup
-```
-
-Start the web page from a second terminal, then open `http://localhost:5173`:
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-The Ruby specs and the linter need an empty database called `bank_test`:
-
-```bash
-cd backend
-createdb bank_test      # once
-bundle exec rspec
-bundle exec rubocop
-```
-
-The web page has its own tests and linter, which need neither the API nor a
-database:
-
-```bash
-cd frontend
-npm test
-npm run lint
-```
-
-The end-to-end tests open the page in a real browser against the real API and
-a database of their own. They start the API and the page themselves, so
-nothing else needs to be running:
-
-```bash
-cd frontend
-createdb bank_e2e                     # once
-npx playwright install chromium       # once: downloads the browser
-npm run e2e
-```
-
-The README on the `extended` branch explains each of these in more detail.
+The hosted version is the quickest way to try the `extended` branch. To run
+it yourself, follow the
+[README on the `extended` branch](https://github.com/DuliniMendis/digital-bank-demo/blob/extended/README.md).
