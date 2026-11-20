@@ -20,7 +20,8 @@ abort "BALANCES_FILE is #{balances_file}, which is not a file." unless File.file
 
 Bank::Interfaces::Api.start(
   database: Bank::Infrastructure::Database.from_environment,
-  balances_file: balances_file
+  balances_file: balances_file,
+  sample_transfers_file: File.expand_path('spec/fixtures/transfers.csv', __dir__)
 )
 
 run Bank::Interfaces::Api
