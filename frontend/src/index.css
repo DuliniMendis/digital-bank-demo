@@ -256,12 +256,19 @@ tbody tr:last-child td {
   font-size: 0.9rem;
 }
 
+/* The browser draws its own arrow hard against the right edge and gives no
+   way to move it. So its arrow is switched off and one is drawn as a
+   background image, 12px in from the edge. The right padding keeps a long
+   name from running underneath it. */
 .upload-row select {
-  padding: 8px 10px;
+  padding: 8px 34px 8px 10px;
   border: 1px solid var(--border);
   border-radius: 8px;
   color: var(--text);
-  background: var(--surface);
+  appearance: none;
+  background: var(--surface)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none' stroke='%2369686d' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 1.5l5 5 5-5'/%3E%3C/svg%3E")
+    no-repeat right 12px center / 12px 8px;
 }
 
 /* The sample picker is a second form under the first one. */
