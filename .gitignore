@@ -3,3 +3,4 @@
 **/vendor/bundle/
 .vercel/
 .env*
+!.env.example

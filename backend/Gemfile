@@ -11,6 +11,11 @@ ruby '>= 3.3'
 # separate gem that has to be listed here.
 gem 'csv'
 
+# dotenv reads the settings in a `.env` file into the environment when the
+# app starts. It never replaces a setting that is already there, and it does
+# nothing when there is no `.env` file, as on the hosted version.
+gem 'dotenv'
+
 # pg is the Postgres driver. Sequel sits on top of it and lets the code
 # describe queries in Ruby instead of writing SQL strings.
 gem 'pg'

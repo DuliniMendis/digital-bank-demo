@@ -2,7 +2,7 @@
 
 # The `rackup` command reads this file to start the server:
 #
-#   DATABASE_URL=postgres://localhost/bank_development bundle exec rackup
+#   bundle exec rackup
 #
 # The server creates its tables if they are missing, but it does not load
 # any balances when it starts. Those are put in the database by seeding it.
@@ -10,6 +10,10 @@
 # The balances file is only read when a reset is asked for. With nothing
 # else given it is the sample balances. To use a different file, name it in
 # BALANCES_FILE.
+
+# Reads DATABASE_URL and any other settings from the `.env` file in this
+# folder. It has to come first, because the lines below use those settings.
+require 'dotenv/load'
 
 require_relative 'lib/bank'
 

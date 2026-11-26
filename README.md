@@ -17,32 +17,49 @@ frontend/   React: the web page
 
 Requires Ruby 3.3 or newer, Node 26 and a running Postgres.
 
+### Setting up
+
+One command gets a fresh checkout ready. Run it from the repository root:
+
+```bash
+bin/setup
+```
+
+It installs the gems and the page's packages, copies `backend/.env.example`
+to `backend/.env`, creates the database named in that file and seeds it with
+the sample balances. It can be run again at any time, and it leaves a
+database that already exists as it is.
+
+`backend/.env` holds the settings for your machine and is never committed.
+`DATABASE_URL` is the address of the database, which starts out as one called
+`bank_development` on a Postgres running on your machine. The server and the
+seed command read the file when they start. A setting given in front of a
+command, as in `DATABASE_URL=... bundle exec rackup`, is used in place of the
+one in the file.
+
 ### The API
 
-Create an empty database and seed it with the opening balances. Both are done
-once:
+Start the server:
 
 ```bash
 cd backend
-bundle install
-createdb bank_development
-DATABASE_URL=postgres://localhost/bank_development bundle exec ruby db/seed.rb
-```
-
-This loads the sample balances. To seed from your own balances file, add
-`BALANCES_FILE=path/to/balances.csv` in front of the command as well.
-
-A bad line in the balances file stops the seeding, and the error names the
-line. Nothing is stored from a file with a bad line.
-
-Then start the server:
-
-```bash
-DATABASE_URL=postgres://localhost/bank_development bundle exec rackup
+bundle exec rackup
 ```
 
 It listens on `http://localhost:9292`. The server never loads balances when it
-starts, so it shows no accounts until the database has been seeded.
+starts, so it shows no accounts until the database has been seeded. `bin/setup`
+seeds a database it has just created. To seed again, run the seed command
+from `backend/`:
+
+```bash
+bundle exec ruby db/seed.rb
+```
+
+This loads the sample balances. To seed from your own balances file, name it
+in `BALANCES_FILE` in `backend/.env`.
+
+A bad line in the balances file stops the seeding, and the error names the
+line. Nothing is stored from a file with a bad line.
 
 From a second terminal, in `backend/`, post a day's transfers:
 
@@ -84,8 +101,8 @@ files are in `backend/spec/fixtures/`.
 Balances are kept in the database, so they are still there after the server
 restarts. To go back to the opening balances, reseed: either post to the reset
 route or run the seed command again. Both replace whatever accounts the
-database holds. The reset route reads the same balances file as the seed
-command, so start the server with the same `BALANCES_FILE` if you named one.
+database holds. The reset route and the seed command both read
+`BALANCES_FILE` from `backend/.env`, so they load the same file.
 
 ### The web page
 
@@ -93,7 +110,6 @@ With the API running, start the page from a second terminal:
 
 ```bash
 cd frontend
-npm install
 npm run dev
 ```
 
