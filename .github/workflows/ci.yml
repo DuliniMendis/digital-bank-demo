@@ -135,3 +135,42 @@ jobs:
 
       - name: Test
         run: npm run e2e
+
+  # Puts a merge into `extended` on the live demo. It waits for the three
+  # jobs above, so a change that fails a test is never deployed.
+  deploy:
+    name: Deploy to Vercel
+    needs: [backend, frontend, e2e]
+
+    # Pull requests and pushes to `main` run the jobs above and stop there.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/extended'
+    runs-on: ubuntu-latest
+
+    # Two merges close together deploy one after the other, in order. A
+    # deployment that has started is left to finish.
+    concurrency:
+      group: deploy-extended
+      cancel-in-progress: false
+
+    # The token is a secret because it can act on the whole Vercel account.
+    # The two IDs only say which project to deploy to. They are kept as
+    # repository variables so the workflow names no account.
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: frontend/.node-version
+
+      - name: Install the Vercel CLI
+        run: npm install --global vercel@latest
+
+      # Uploads the checked-out files, and Vercel builds the page and the
+      # API's container from them.
+      - name: Deploy
+        run: vercel deploy --prod --yes

@@ -109,13 +109,18 @@ simple code matters more here than clever code.
 
 ## The live demo
 
-- **Deploys are manual and need the owner's go-ahead.** The GitHub
-  repository is not connected to Vercel.
+- **A merge into `extended` goes live.** The `deploy` job in the CI workflow
+  deploys to production once the other jobs pass, so treat merging as
+  deploying.
+- **Do not connect the GitHub repository to Vercel.** The deploy job uses the
+  Vercel CLI with a token kept as a GitHub secret. A Git connection as well
+  would deploy every merge twice, and would build previews of pull requests
+  that share the live database.
 - **Never test against the live demo.** Do not upload files to it or reset
   it. Reading its pages is fine.
-- **Deploy from a clean checkout of `extended`.** The Vercel CLI uploads
-  untracked files that `.gitignore` does not list, which would include the
-  original brief.
+- **A deploy by hand still needs the owner's go-ahead, and a clean checkout
+  of `extended`.** The Vercel CLI uploads untracked files that `.gitignore`
+  does not list, which would include the original brief.
 - **The first deployment of a new Vercel project goes to production**, even
   without `--prod`.
 
