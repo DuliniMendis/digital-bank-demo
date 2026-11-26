@@ -137,7 +137,7 @@ npm test
 npm run lint
 ```
 
-There are also two end-to-end tests, written with Playwright. They open the
+There are also a few end-to-end tests, written with Playwright. They open the
 page in a real browser and use it against the real API and a real database,
 to check that the three work together. Playwright starts the API and the page
 itself, on ports of their own, so nothing else needs to be running:
@@ -249,7 +249,7 @@ each part of the page:
 |-------------------|----------------------------------------------------------------------|
 | `PageHeader`      | The title and the reset button.                                      |
 | `AccountsSection` | The balances, in an `AccountsTable`.                                 |
-| `UploadSection`   | The `UploadForm` (file picker and button) and the `UploadResult` of the last upload. |
+| `UploadSection`   | The `UploadForm` (file picker and button), the `SamplePicker` (list of sample files and button) and the `UploadResult` of the last upload. |
 | `TransfersTable`  | The table of transfers inside the upload result.                     |
 | `Spinner`         | The turning ring shown while the page waits for the API.             |
 
