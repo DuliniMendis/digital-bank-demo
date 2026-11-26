@@ -2,3 +2,6 @@
 # copies installed on this machine are not wanted.
 .bundle/
 vendor/
+
+# This machine's settings. The hosted version gets its own from Vercel.
+.env

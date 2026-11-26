@@ -4,10 +4,14 @@
 # server is first started, and again whenever the accounts should go back to
 # their opening balances:
 #
-#   DATABASE_URL=postgres://localhost/bank_development bundle exec ruby db/seed.rb
+#   bundle exec ruby db/seed.rb
 #
 # With nothing else given it loads the sample balances. To load a different
 # file, name it in BALANCES_FILE.
+
+# Reads DATABASE_URL and any other settings from the `.env` file in the
+# folder the command is run from.
+require 'dotenv/load'
 
 require_relative '../lib/bank'
 

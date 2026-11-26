@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+
+# Gets a fresh copy of the project ready to run on this machine:
+#
+#   bin/setup
+#
+# It needs Ruby, Node and a running Postgres, and sets up everything else.
+# It is safe to run again, because each step is skipped when its work has
+# already been done.
+
+# Stops at the first command that fails, so a later step never runs on top
+# of a broken earlier one.
+set -euo pipefail
+
+cd "$(dirname "$0")/../backend"
+
+echo "== Installing the API's gems"
+bundle install
+
+if [ ! -f .env ]; then
+  cp .env.example .env
+  echo "== Created backend/.env from backend/.env.example"
+fi
+
+# Reads the settings in .env into this script. `set -a` also passes each one
+# on to the commands started below, which is how the seed command sees them.
+set -a
+source .env
+set +a
+
+# The address ends with a slash and the name of the database. What comes
+# before that slash is the Postgres server the database lives on.
+database_name="${DATABASE_URL##*/}"
+server="${DATABASE_URL%/*}"
+
+if ! pg_isready --quiet --dbname="$server/postgres"; then
+  echo "Postgres is not answering. Start it, then run bin/setup again." >&2
+  exit 1
+fi
+
+# An empty command, which only succeeds if the database can be connected to.
+if psql "$DATABASE_URL" --command='' > /dev/null 2>&1; then
+  echo "== The database $database_name already exists, so it is left as it is"
+else
+  echo "== Creating the database $database_name and loading the opening balances"
+
+  # A database can only be created from inside another one. Every Postgres
+  # server comes with one called postgres, so that is the one used here.
+  psql "$server/postgres" --quiet --command="CREATE DATABASE \"$database_name\""
+  bundle exec ruby db/seed.rb
+fi
+
+echo "== Installing the web page's packages"
+cd ../frontend
+npm install
+
+cat <<'MESSAGE'
+
+Ready. Start the API and the page in two terminals:
+
+  cd backend && bundle exec rackup
+  cd frontend && npm run dev
+
+Then open http://localhost:5173
+MESSAGE

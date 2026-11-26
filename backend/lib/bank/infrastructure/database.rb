@@ -25,7 +25,7 @@ module Bank
       # script both start this way.
       def self.from_environment
         url = ENV.fetch('DATABASE_URL') do
-          abort 'Set DATABASE_URL to the address of the Postgres database.'
+          abort 'DATABASE_URL is not set. Run bin/setup, or put the address of the Postgres database in backend/.env.'
         end
         connect(url).tap { |database| migrate(database) }
       end
