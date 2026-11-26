@@ -292,7 +292,21 @@ Two things follow from how containers run on Vercel:
 - **Every start runs `config.ru`**, so the table is created on the first
   start and left alone on later ones.
 
-To deploy by hand, from the repository root:
+A merge into `extended` is deployed automatically. The `deploy` job in
+`.github/workflows/ci.yml` runs after the tests pass and puts the merge into
+production with the Vercel CLI. It reads three settings from the GitHub
+repository:
+
+| Setting             | Kind     | What it is                                    |
+|---------------------|----------|-----------------------------------------------|
+| `VERCEL_TOKEN`      | Secret   | A Vercel access token, which lets the job deploy. |
+| `VERCEL_ORG_ID`     | Variable | The Vercel account the project belongs to.    |
+| `VERCEL_PROJECT_ID` | Variable | The Vercel project to deploy to.              |
+
+The GitHub repository is not connected to Vercel in any other way, so pull
+requests and pushes to `main` deploy nothing.
+
+To deploy by hand instead, from the repository root:
 
 ```bash
 vercel deploy          # a preview
