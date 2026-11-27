@@ -67,5 +67,24 @@ RSpec.describe Bank::Domain::Transfer do
         expect { apply_refused_transfer }.not_to change(destination, :balance)
       end
     end
+
+    context 'when it is handed an account the transfer does not name' do
+      let(:other_account) do
+        Bank::Domain::Account.new(
+          number: Bank::Domain::AccountNumber.new(value: '3212343433335755'),
+          balance: money(1000)
+        )
+      end
+
+      it 'refuses a source that is not the from account' do
+        expect { transfer.apply(source: other_account, destination: destination) }
+          .to raise_error(ArgumentError, 'source must be account 1111234522226789')
+      end
+
+      it 'refuses a destination that is not the to account' do
+        expect { transfer.apply(source: source, destination: other_account) }
+          .to raise_error(ArgumentError, 'destination must be account 1212343433335665')
+      end
+    end
   end
 end
