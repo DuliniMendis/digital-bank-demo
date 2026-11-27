@@ -16,8 +16,16 @@ module Bank
         super
       end
 
+      # The two accounts have to be the ones this transfer names. Being handed
+      # any others is a mistake in the calling code and not a broken business
+      # rule, so it raises an ArgumentError, which is never reported as an
+      # ordinary rejected transfer.
+      #
       # Withdraws first. If that is refused, deposit does not go ahead.
       def apply(source:, destination:)
+        raise ArgumentError, "source must be account #{from}" unless source.number == from
+        raise ArgumentError, "destination must be account #{to}" unless destination.number == to
+
         source.withdraw(amount)
         destination.deposit(amount)
       end
